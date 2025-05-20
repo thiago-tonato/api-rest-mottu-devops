@@ -119,6 +119,11 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 ## 👥 Equipe
 
-- **Murilo Ribeiro** — RM555109  
-- **Thiago Garcia** — RM99404  
-- **Ian Madeira** — RM555502
+| Nome                                | RM       | GitHub                                |
+|-------------------------------------|----------|----------------------------------------|
+| Murilo Ribeiro Santos               | RM555109 | [@murilors27](https://github.com/murilors27) |
+| Thiago Garcia Tonato                | RM99404  | [@thiago-tonato](https://github.com/thiago-tonato) |
+| Ian Madeira Gonçalves da Silva      | RM555502 | [@IanMadeira](https://github.com/IanMadeira) |
+
+**Curso**: Análise e Desenvolvimento de Sistemas  
+**Instituição**: FIAP – Faculdade de Informática e Administração Paulista
