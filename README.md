@@ -64,51 +64,61 @@ Resolver o problema de localização imprecisa em pátios onde motos ficam muito
 
 ## 🧪 Como rodar localmente
 
-1. Clone o repositório:
+### Clone o repositório:
 
-git clone https://github.com/seu-usuario/rastreamento-uwb-java.git
+git clone https://github.com/seu-usuario/rastreamento-uwb-java.git  
 cd rastreamento-uwb-java
 
-2. Execute o projeto:
+### Execute o projeto:
 
 ./mvnw spring-boot:run
 
-3. Acesse a API:
+### Acesse a API:
 
 http://localhost:8080/api/motos
 
-🐳 Docker (para DevOps)
-O projeto está pronto para rodar em containers.
+---
 
-application.properties:
+## 🐳 Docker (para DevOps)
 
-server.port=8080
+> O projeto está pronto para rodar em containers.
+
+### application.properties:
+
+server.port=8080  
 server.address=0.0.0.0
 
-Exemplo de Dockerfile:
+### Exemplo de Dockerfile:
 
-FROM eclipse-temurin:17
-WORKDIR /app
-COPY target/rastreamento-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8080
+FROM eclipse-temurin:17  
+WORKDIR /app  
+COPY target/rastreamento-0.0.1-SNAPSHOT.jar app.jar  
+EXPOSE 8080  
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
-📸 Exemplos de JSON
-Criar Moto:
+---
 
-{
-  "modelo": "Honda CG 160",
-  "cor": "Preto",
-  "identificadorUWB": "UWB001",
-  "sensorId": 1
+## 📸 Exemplos de JSON
+
+### Criar Moto:
+
+{  
+&nbsp;&nbsp;"modelo": "Honda CG 160",  
+&nbsp;&nbsp;"cor": "Preto",  
+&nbsp;&nbsp;"identificadorUWB": "UWB001",  
+&nbsp;&nbsp;"sensorId": 1  
 }
 
-Criar Sensor
+### Criar Sensor:
 
-{
-  "localizacao": "Setor A - Coluna 3"
+{  
+&nbsp;&nbsp;"localizacao": "Setor A - Coluna 3"  
 }
-👥 Equipe
-Murilo Ribeiro — RM555109
-Thiago Garcia - RM99404
-Ian Madeira - RM555502
+
+---
+
+## 👥 Equipe
+
+- **Murilo Ribeiro** — RM555109  
+- **Thiago Garcia** — RM99404  
+- **Ian Madeira** — RM555502
