@@ -67,7 +67,7 @@ Resolver o problema de localização imprecisa em pátios onde motos ficam muito
 ### Clone o repositório:
 
 git clone https://github.com/murilors27/api-rest-mottu.git  
-cd rastreamento-uwb-java
+cd api-rest-mottu
 
 ### Execute o projeto:
 
