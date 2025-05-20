@@ -3,7 +3,7 @@ FROM maven:3.9.4-eclipse-temurin AS build
 WORKDIR /app
 
 #Copiar arquivos para o container
-COPY ..
+COPY . .
 
 #Compila o projeto e gera o JAR
 RUN mvn clean package -Dskiptests
