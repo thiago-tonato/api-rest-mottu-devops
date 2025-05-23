@@ -10,7 +10,6 @@ SIZE="Standard_D2s_v3"
 ADMIN_USERNAME="rm99404"
 ADMIN_PASSWORD="Fiap@2tdsvms"
 DISK_SKU="StandardSSD_LRS"
-PORT=8080
 
 # Criar grupo de recursos
 echo "Criando grupo de recursos: $RESOURCE_GROUP..."
