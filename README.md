@@ -48,9 +48,8 @@ Resolver o problema de localização e gestão de motos em pátios de alta densi
 - Login via formulário (Spring Security + Thymeleaf)
 - Usuários com perfis ADMIN e USER
 - Regras de acesso:
-/admin/** → apenas ADMIN
-/motos, /sensores, /alocacoes, /manutencoes → ADMIN e USER
-Apenas ADMIN pode criar, editar ou excluir
+  - motos, /sensores, /alocacoes, /manutencoes → ADMIN e USER
+  - Apenas ADMIN pode criar, editar ou excluir
 
 ### 📦 Versionamento do Banco (Flyway)
 
@@ -131,6 +130,7 @@ PUT	 | api/manutencoes/{id}  | Encerra manutenção  |
 - cd api-rest-mottu
 
 ### Configure o banco PostgreSQL no application.yml:
+```java
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/mottu
@@ -142,6 +142,7 @@ spring:
     show-sql: true
   flyway:
     enabled: true
+```
 
 ### Execute o projeto:
 - ./mvnw spring-boot:run
