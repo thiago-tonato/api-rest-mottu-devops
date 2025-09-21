@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<div th:replace="~{fragments/_navbar :: navbar}"></div>
+
+<div style="max-width: 400px; margin: 40px auto; background: #fff; padding: 20px; border:1px solid #ddd; border-radius:6px;">
+    <h1 th:text="${moto.id != null} ? 'Editar Moto' : 'Nova Moto'" style="color:#333; margin-bottom:20px;"></h1>
+
+    <div th:if="${successMessage}" style="color: green; margin-bottom: 15px;">
+        <p th:text="${successMessage}"></p>
+    </div>
+
+    <form th:action="@{${moto.id != null} ? '/motos/editar/' + ${moto.id} : '/motos'}"
+          th:object="${moto}" method="post">
+
+        <div style="margin-bottom:15px;">
+            <label>Modelo:</label><br/>
+            <input type="text" th:field="*{modelo}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" />
+            <div th:if="${#fields.hasErrors('modelo')}" th:errors="*{modelo}" style="color: red; font-size: 12px;"></div>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>Cor:</label><br/>
+            <input type="text" th:field="*{cor}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" />
+            <div th:if="${#fields.hasErrors('cor')}" th:errors="*{cor}" style="color: red; font-size: 12px;"></div>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>Identificador UWB:</label><br/>
+            <input type="text" th:field="*{identificadorUWB}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" />
+            <div th:if="${#fields.hasErrors('identificadorUWB')}" th:errors="*{identificadorUWB}" style="color: red; font-size: 12px;"></div>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>Sensor:</label><br/>
+            <select th:field="*{sensorId}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <option value="" disabled selected>Selecione um sensor</option>
+                <option th:each="sensor : ${sensores}"
+                        th:value="${sensor.id}"
+                        th:text="${sensor.localizacao}">
+                </option>
+            </select>
+            <div th:if="${#fields.hasErrors('sensorId')}" th:errors="*{sensorId}" style="color: red; font-size: 12px;"></div>
+        </div>
+
+        <div style="text-align:right;">
+            <button type="submit" style="padding:8px 15px; background:#007bff; color:white; border:none; border-radius:4px;">Salvar</button>
+            <a th:href="@{/motos}" style="margin-left:10px; text-decoration:none; color:#555;">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<div th:replace="~{fragments/_footer :: footer}"></div>
+</body>
+</html>

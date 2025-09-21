@@ -1,8 +1,8 @@
 package com.mottu.rastreamento.models;
 
+import com.mottu.rastreamento.models.enums.StatusMoto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Entity
@@ -17,6 +17,7 @@ public class Moto {
     private Long id;
 
     @NotBlank
+    @Column(name = "identificador_uwb", nullable = false, unique = true)
     private String identificadorUWB;
 
     @NotBlank
@@ -24,6 +25,10 @@ public class Moto {
 
     @NotBlank
     private String cor;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatusMoto status = StatusMoto.DISPONIVEL; // default
 
     @ManyToOne
     @JoinColumn(name = "sensor_id")

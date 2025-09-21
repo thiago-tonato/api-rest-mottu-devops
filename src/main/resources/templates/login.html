@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<div th:replace="~{fragments/_navbar :: navbar}"></div>
+
+<div style="width: 320px; margin: 100px auto; padding: 25px; background: #fff;
+     border: 1px solid #ddd; border-radius: 6px; text-align: center;">
+    <h2 style="margin-bottom: 20px; color: #333;">Login</h2>
+
+    <form th:action="@{/login}" method="post">
+        <input type="text" name="username" placeholder="Usuário" required
+               style="width: 100%; padding: 10px; margin: 8px 0; border:1px solid #ccc; border-radius:4px;" />
+        <input type="password" name="password" placeholder="Senha" required
+               style="width: 100%; padding: 10px; margin: 8px 0; border:1px solid #ccc; border-radius:4px;" />
+        <button type="submit"
+                style="width: 100%; padding: 10px; background: #007bff; color: white;
+                       border: none; border-radius: 4px; cursor: pointer;">
+            Entrar
+        </button>
+    </form>
+
+    <div th:if="${param.error}" style="color: red; margin-top: 12px; font-size: 14px;">
+        Usuário ou senha inválidos.
+    </div>
+
+    <div th:if="${param.logout}" style="color: green; margin-top: 12px; font-size: 14px;">
+        Logout realizado com sucesso.
+    </div>
+</div>
+
+<div th:replace="~{fragments/_footer :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<div th:replace="~{fragments/_navbar :: navbar}"></div>
+
+<div style="max-width:500px; margin:40px auto; background:#fff; padding:20px; border:1px solid #ddd; border-radius:6px;">
+    <h1 style="color:#333;">Abrir Alocação</h1>
+
+    <form th:action="@{/alocacoes}" th:object="${alocacao}" method="post">
+        <div style="margin-bottom:15px;">
+            <label>Moto:</label><br/>
+            <select th:field="*{motoId}" required
+                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <option th:each="moto : ${motos}" th:value="${moto.id}"
+                        th:text="${moto.modelo} + ' - ' + ${moto.identificadorUWB}"></option>
+            </select>
+        </div>
+        <div style="text-align:right;">
+            <button type="submit" style="padding:8px 15px; background:#28a745; color:white; border:none; border-radius:4px;">
+                Abrir
+            </button>
+            <a th:href="@{/alocacoes}" style="margin-left:10px; text-decoration:none; color:#555;">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<div th:replace="~{fragments/_footer :: footer}"></div>
+</body>
+</html>

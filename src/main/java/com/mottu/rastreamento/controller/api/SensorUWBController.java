@@ -1,4 +1,4 @@
-package com.mottu.rastreamento.controller;
+package com.mottu.rastreamento.controller.api;
 
 import com.mottu.rastreamento.dto.SensorDTO;
 import com.mottu.rastreamento.service.SensorUWBService;
@@ -9,8 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/sensores")

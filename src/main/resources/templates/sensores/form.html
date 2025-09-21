@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<div th:replace="~{fragments/_navbar :: navbar}"></div>
+
+<div style="max-width: 400px; margin: 40px auto; background: #fff; padding: 20px; border:1px solid #ddd; border-radius:6px;">
+    <h1 th:text="${sensor.id != null} ? 'Editar Sensor' : 'Novo Sensor'" style="color:#333; margin-bottom:20px;"></h1>
+
+    <!-- Mensagem de sucesso -->
+    <div th:if="${successMessage}" style="color: green; margin-bottom: 15px;">
+        <p th:text="${successMessage}"></p>
+    </div>
+
+    <form th:action="@{${sensor.id != null} ? '/sensores/editar/' + ${sensor.id} : '/sensores'}"
+          th:object="${sensor}" method="post">
+
+        <div style="margin-bottom:15px;">
+            <label>Localização:</label><br/>
+            <input type="text" th:field="*{localizacao}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" />
+            <div th:if="${#fields.hasErrors('localizacao')}" th:errors="*{localizacao}" style="color: red; font-size: 12px;"></div>
+        </div>
+
+        <div style="text-align:right;">
+            <button type="submit" style="padding:8px 15px; background:#007bff; color:white; border:none; border-radius:4px;">Salvar</button>
+            <a th:href="@{/sensores}" style="margin-left:10px; text-decoration:none; color:#555;">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<div th:replace="~{fragments/_footer :: footer}"></div>
+</body>
+</html>

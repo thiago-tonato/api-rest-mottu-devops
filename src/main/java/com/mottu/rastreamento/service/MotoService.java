@@ -35,12 +35,28 @@ public class MotoService {
             moto.setSensor(sensor);
         }
 
+        moto.setStatus(com.mottu.rastreamento.models.enums.StatusMoto.DISPONIVEL);
+
         return toDTO(motoRepository.save(moto));
     }
 
     public Page<MotoDTO> listar(Pageable pageable) {
         return motoRepository.findAll(pageable)
                 .map(this::toDTO);
+    }
+
+    public List<MotoDTO> listarTodas() {
+        return motoRepository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<MotoDTO> listarTodasDisponiveis() {
+        return motoRepository.findAll().stream()
+                .filter(m -> m.getStatus() == com.mottu.rastreamento.models.enums.StatusMoto.DISPONIVEL)
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     public MotoDTO buscarPorId(Long id) {
@@ -56,7 +72,6 @@ public class MotoService {
                 .orElseThrow(() -> new EntityNotFoundException("Moto com UWB '" + identificadorUWB + "' não encontrada"));
         return toDTO(moto);
     }
-
 
     public MotoDTO atualizar(Long id, MotoDTO dto) {
         Moto moto = motoRepository.findById(id)
@@ -93,3 +108,4 @@ public class MotoService {
         return dto;
     }
 }
+

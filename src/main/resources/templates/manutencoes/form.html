@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<div th:replace="~{fragments/_navbar :: navbar}"></div>
+
+<div style="max-width: 400px; margin: 40px auto; background: #fff; padding: 20px; border:1px solid #ddd; border-radius:6px;">
+    <h1>Nova Manutenção</h1>
+
+    <form th:action="@{/manutencoes}" th:object="${manutencao}" method="post">
+
+        <div style="margin-bottom:15px;">
+            <label>Moto:</label><br/>
+            <select th:field="*{motoId}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <option th:each="m : ${motos}" th:value="${m.id}"
+                        th:text="${m.modelo} + ' - ' + ${m.identificadorUWB}"></option>
+            </select>
+            <div th:if="${#fields.hasErrors('motoId')}" th:errors="*{motoId}" style="color:red; font-size:12px;"></div>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>Descrição:</label><br/>
+            <textarea th:field="*{descricao}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></textarea>
+        </div>
+
+        <div style="text-align:right;">
+            <button type="submit" style="padding:8px 15px; background:#007bff; color:white; border:none; border-radius:4px;">Abrir</button>
+            <a th:href="@{/manutencoes}" style="margin-left:10px; text-decoration:none; color:#555;">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<div th:replace="~{fragments/_footer :: footer}"></div>
+</body>
+</html>

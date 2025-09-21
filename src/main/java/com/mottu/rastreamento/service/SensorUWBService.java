@@ -29,6 +29,13 @@ public class SensorUWBService {
                 .map(this::toDTO);
     }
 
+    public List<SensorDTO> listarTodos() {
+        return repository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
     public SensorDTO buscarPorId(Long id) {
         SensorUWB sensor = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Sensor não encontrado"));

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<div th:replace="~{fragments/_navbar :: navbar}"></div>
+
+<div style="max-width: 800px; margin: 40px auto;">
+    <h1 style="color: #333;">Sensores Cadastrados</h1>
+
+    <div th:if="${success}" style="background:#d4edda; color:#155724; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <span th:text="${success}"></span>
+    </div>
+    <div th:if="${error}" style="background:#f8d7da; color:#721c24; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <span th:text="${error}"></span>
+    </div>
+
+    <div style="text-align: right; margin-bottom: 15px;" sec:authorize="hasRole('ADMIN')">
+        <a th:href="@{/sensores/novo}"
+           style="padding: 8px 15px; background:#007bff; color:#fff; text-decoration:none; border-radius:4px;">
+            Novo Sensor
+        </a>
+    </div>
+
+    <table style="width:100%; border-collapse: collapse; background:#fff;">
+        <tr style="background:#f0f0f0;">
+            <th style="padding:10px; text-align:left;">ID</th>
+            <th style="padding:10px; text-align:left;">Localização</th>
+            <th style="padding:10px; text-align:left;" sec:authorize="hasRole('ADMIN')">Ações</th>
+        </tr>
+        <tr th:each="sensor : ${sensores}" style="border-bottom:1px solid #ddd;">
+            <td th:text="${sensor.id}" style="padding:8px;"></td>
+            <td th:text="${sensor.localizacao}" style="padding:8px;"></td>
+            <td style="padding:8px;" sec:authorize="hasRole('ADMIN')">
+                <a th:href="@{'/sensores/editar/' + ${sensor.id}}" style="color:#007bff; margin-right:10px;">Editar</a>
+                <a th:href="@{'/sensores/deletar/' + ${sensor.id}}" style="color:#dc3545;">Excluir</a>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div th:replace="~{fragments/_footer :: footer}"></div>
+</body>
+</html>
