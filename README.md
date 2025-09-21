@@ -81,8 +81,8 @@ Resolver o problema de localização e gestão de motos em pátios de alta densi
 
 - Formatação de datas para dd/MM/yyyy HH:mm
 - Páginas adaptadas conforme perfil:
-Usuário USER → sem botões de “Nova” e sem coluna de ações
-Usuário ADMIN → pode gerenciar todas as entidades
+  - Usuário USER → sem botões de “Nova” e sem coluna de ações
+  - Usuário ADMIN → pode gerenciar todas as entidades
 
 ---
 
