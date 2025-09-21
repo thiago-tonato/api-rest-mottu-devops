@@ -1,118 +1,171 @@
 # 🏍️ Rastreamento de Motos com UWB — API Java Spring Boot
 
-API REST desenvolvida para oferecer suporte à solução de rastreamento preciso de motos utilizando sensores UWB (Ultra Wideband), voltada para ambientes de alta densidade, como pátios da Mottu.
+Aplicação Web completa desenvolvida em Spring Boot, com foco em Thymeleaf (frontend), Flyway (versionamento do banco) e Spring Security (autenticação e autorização).
+A solução oferece suporte ao rastreamento preciso de motos da Mottu, integrando controle de alocações e manutenções, além do cadastro de motos e sensores UWB.
 
 ---
 
 ## 📌 Objetivo
 
-Resolver o problema de localização imprecisa em pátios onde motos ficam muito próximas umas das outras, utilizando sensores UWB que permitem rastreamento e identificação individual e em tempo real.
+Resolver o problema de localização e gestão de motos em pátios de alta densidade, utilizando sensores UWB (Ultra Wideband) para rastreamento individual, aliado a uma aplicação segura e fácil de usar.
 
 ---
 
 ## ⚙️ Tecnologias Utilizadas
 
-- ✅ Java 17
-- ✅ Spring Boot 3.4.5
-- ✅ Spring Web
-- ✅ Spring Data JPA
-- ✅ Banco de Dados H2 (em memória)
-- ✅ Bean Validation
-- ✅ Cache com `@Cacheable`
-- ✅ Maven
-- ✅ Docker-ready
+✅ Java 17
+
+✅ Spring Boot 3.4.5
+
+✅ Spring Web
+
+✅ Spring Data JPA
+
+✅ Spring Security (BCrypt, roles ADMIN/USER)
+
+✅ Thymeleaf + Thymeleaf Extras Spring Security
+
+✅ Bean Validation
+
+✅ Flyway (versionamento do banco)
+
+✅ PostgreSQL
+
+✅ Maven
 
 ---
 
-## 🗂️ Funcionalidades da API
+## 🗂️ Funcionalidades da Aplicação
+### 🔧 CRUDs com Thymeleaf
 
-- 🔄 CRUD completo de motos e sensores UWB
-- 🔗 Relacionamento entre motos e sensores
-- 🔍 Busca por identificador UWB
-- 📄 Paginação e ordenação de resultados
-- ✅ Validação de campos (ex: modelo, cor, sensor)
-- 🚫 Tratamento centralizado de erros (HTTP 400, 404, 500)
-- ⚡ Cache para otimizar buscas repetidas
-- 🌐 Pronta para containerização e deploy em nuvem
+- Motos
+- Sensores UWB
+✔️ Com validação de campos e mensagens de erro no formulário
+✔️ Páginas estruturadas com fragments (_head, _navbar, _footer)
+
+### 🔐 Segurança
+
+- Login via formulário (Spring Security + Thymeleaf)
+- Usuários com perfis ADMIN e USER
+- Regras de acesso:
+/admin/** → apenas ADMIN
+/motos, /sensores, /alocacoes, /manutencoes → ADMIN e USER
+Apenas ADMIN pode criar, editar ou excluir
+
+### 📦 Versionamento do Banco (Flyway)
+
+- V1__create_sensores.sql → Criação da tabela de sensores
+- V2__create_motos.sql → Criação da tabela de motos
+- V3__insert_sensores.sql → Seed de sensores iniciais
+- V4__insert_motos.sql → Seed de motos iniciais
+- V5__create_roles.sql → Criação de roles
+- V6__create_users.sql → Criação de usuários
+- V7__create_alocacoes.sql → Criação de alocações
+- V8__create_manutencoes.sql → Criação de manutenções
+- V9__insert_roles_and_users.sql → Seed de roles e usuários (admin123, user123)
+
+### 🔄 Funcionalidades Avançadas
+
+#### Fluxo A — Alocação de Motos
+- Abrir alocação → moto precisa estar DISPONÍVEL
+- Encerrar alocação → moto volta a ficar DISPONÍVEL
+- Impede múltiplas alocações abertas para a mesma moto
+- Listagem de alocações abertas + histórico
+
+#### Fluxo B — Manutenção
+- Abrir manutenção → moto muda para MANUTENÇÃO
+- Fechar manutenção → moto volta para DISPONÍVEL
+- Impede alocação de moto em manutenção
+- Lista de manutenções abertas e encerradas
+
+### ✅ Extras
+
+- Formatação de datas para dd/MM/yyyy HH:mm
+- Páginas adaptadas conforme perfil:
+Usuário USER → sem botões de “Nova” e sem coluna de ações
+Usuário ADMIN → pode gerenciar todas as entidades
 
 ---
 
-## 🔄 Endpoints principais
-
+## 🔄 Endpoints da API (REST)
 ### 📌 Motos
 
 | Método | Endpoint                          | Descrição                                |
 |--------|-----------------------------------|------------------------------------------|
-| GET    | `/api/motos`                      | Lista motos com paginação                |
-| GET    | `/api/motos/{id}`                 | Busca moto por ID                        |
-| GET    | `/api/motos/buscar/uwb`           | Busca por identificadorUWB               |
-| POST   | `/api/motos`                      | Cadastra nova moto                       |
-| PUT    | `/api/motos/{id}`                 | Atualiza uma moto existente              |
-| DELETE | `/api/motos/{id}`                 | Remove uma moto                          |
+GET	| api/motos	| Lista motos |
+GET	| api/motos/{id} |	Busca moto por ID |
+POST	| api/motos	| Cria nova moto |
+PUT	| api/motos/{id} | Atualiza moto existente |
+DELETE	| api/motos/{id} |	Remove moto |
 
-### 📌 Sensores UWB
+### 📌 Sensores
 
-| Método | Endpoint              | Descrição                     |
-|--------|-----------------------|-------------------------------|
-| GET    | `/api/sensores`       | Lista todos os sensores       |
-| GET    | `/api/sensores/{id}`  | Busca sensor por ID           |
-| POST   | `/api/sensores`       | Cadastra novo sensor          |
-| PUT    | `/api/sensores/{id}`  | Atualiza um sensor existente  |
-| DELETE | `/api/sensores/{id}`  | Remove um sensor              |
+| Método | Endpoint                          | Descrição                                |
+|--------|-----------------------------------|------------------------------------------|
+GET	| api/sensores |	Lista sensores |
+GET	| api/sensores/{id}	| Busca sensor por ID |
+POST	| api/sensores | Cria novo sensor |
+PUT	| api/sensores/{id}	| Atualiza sensor existente |
+DELETE	| api/sensores/{id}	| Remove sensor |
+
+### 📌 Alocações
+
+| Método | Endpoint                          | Descrição                                |
+|--------|-----------------------------------|------------------------------------------|
+GET	 | api/alocacoes  |	Lista alocações  |
+POST	 |api/alocacoes  |	Abre alocação  |
+PUT	 | api/alocacoes/{id}  |	Encerra alocação  |
+### 📌 Manutenções
+
+| Método | Endpoint                          | Descrição                                |
+|--------|-----------------------------------|------------------------------------------|
+GET	 | api/manutencoes	 | Lista manutenções  |
+POST	 | api/manutencoes  |	Abre manutenção  |
+PUT	 | api/manutencoes/{id}  | Encerra manutenção  |
 
 ---
 
 ## 🧪 Como rodar localmente
-
 ### Clone o repositório:
+- git clone https://github.com/murilors27/api-rest-mottu.git
+- cd api-rest-mottu
 
-git clone https://github.com/murilors27/api-rest-mottu.git  
-cd api-rest-mottu
+### Configure o banco PostgreSQL no application.yml:
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mottu
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
 
 ### Execute o projeto:
+- ./mvnw spring-boot:run
 
-./mvnw spring-boot:run
-
-### Acesse a API:
-
-http://localhost:8080/api/motos
-
----
-
-## 🐳 Docker (para DevOps)
-
-> O projeto está pronto para rodar em containers.
-
-### application.properties:
-
-server.port=8080  
-server.address=0.0.0.0
-
-### Exemplo de Dockerfile:
-
-FROM eclipse-temurin:17  
-WORKDIR /app  
-COPY target/rastreamento-0.0.1-SNAPSHOT.jar app.jar  
-EXPOSE 8080  
-ENTRYPOINT ["java", "-jar", "app.jar"]
+### Acesse:
+- Frontend (Thymeleaf): http://localhost:8080/motos
+- Login:
+Admin → admin / admin123
+User → user / user123
 
 ---
 
-## 📸 Exemplos de JSON
-
-### Criar Moto:
-
-{  
-&nbsp;&nbsp;"modelo": "Honda CG 160",  
-&nbsp;&nbsp;"cor": "Preto",  
-&nbsp;&nbsp;"identificadorUWB": "UWB001",  
-&nbsp;&nbsp;"sensorId": 1  
+## 📸 Exemplos de JSON (API)
+Criar Moto
+{
+  "modelo": "Honda CG 160",
+  "cor": "Preto",
+  "identificadorUWB": "UWB001",
+  "sensorId": 1
 }
 
-### Criar Sensor:
-
-{  
-&nbsp;&nbsp;"localizacao": "Setor A - Coluna 3"  
+Criar Sensor
+{
+  "localizacao": "Setor A - Coluna 3"
 }
 
 ---
