@@ -39,9 +39,9 @@ Resolver o problema de localização e gestão de motos em pátios de alta densi
 ### 🔧 CRUDs com Thymeleaf
 
 - Motos
-- Sensores UWB
-✔️ Com validação de campos e mensagens de erro no formulário
-✔️ Páginas estruturadas com fragments (_head, _navbar, _footer)
+- Sensores UWB:
+  - ✔️ Com validação de campos e mensagens de erro no formulário
+  - ✔️ Páginas estruturadas com fragments (_head, _navbar, _footer)
 
 ### 🔐 Segurança
 
