@@ -48,7 +48,7 @@ Resolver o problema de localização e gestão de motos em pátios de alta densi
 - Login via formulário (Spring Security + Thymeleaf)
 - Usuários com perfis ADMIN e USER
 - Regras de acesso:
-  - motos, /sensores, /alocacoes, /manutencoes → ADMIN e USER
+  - /motos, /sensores, /alocacoes, /manutencoes → ADMIN e USER
   - Apenas ADMIN pode criar, editar ou excluir
 
 ### 📦 Versionamento do Banco (Flyway)
