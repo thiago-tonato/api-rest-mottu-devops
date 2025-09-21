@@ -126,8 +126,10 @@ PUT	 | api/manutencoes/{id}  | Encerra manutenção  |
 
 ## 🧪 Como rodar localmente
 ### Clone o repositório:
+```
 - git clone https://github.com/murilors27/api-rest-mottu.git
 - cd api-rest-mottu
+```
 
 ### Configure o banco PostgreSQL no application.yml:
 ```java
