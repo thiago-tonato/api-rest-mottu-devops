@@ -154,8 +154,8 @@ spring:
 ### Acesse:
 - Frontend (Thymeleaf): http://localhost:8080/motos
 - Login:
-Admin → admin / admin123
-User → user / user123
+  - Admin → admin / admin123
+  - User → user / user123
 
 ---
 
