@@ -145,7 +145,9 @@ spring:
 ```
 
 ### Execute o projeto:
+```
 - ./mvnw spring-boot:run
+```
 
 ### Acesse:
 - Frontend (Thymeleaf): http://localhost:8080/motos
@@ -157,17 +159,21 @@ User → user / user123
 
 ## 📸 Exemplos de JSON (API)
 Criar Moto
+```
 {
   "modelo": "Honda CG 160",
   "cor": "Preto",
   "identificadorUWB": "UWB001",
   "sensorId": 1
 }
+```
 
 Criar Sensor
+```
 {
   "localizacao": "Setor A - Coluna 3"
 }
+```
 
 ---
 
