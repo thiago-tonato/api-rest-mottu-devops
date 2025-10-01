@@ -1,0 +1,421 @@
+{
+  "info": {
+    "name": "Mottu API - Rastreamento de Motos UWB",
+    "description": "Collection completa para testes da API de rastreamento de motos com tecnologia UWB",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080",
+      "description": "URL base da API - substitua <ID> pelo ID real do container"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Sensores UWB",
+      "item": [
+        {
+          "name": "Criar Sensor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"localizacao\": \"Pátio Centro - Zona A\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sensores",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sensores"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Sensores",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/sensores",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sensores"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Sensor por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/sensores/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sensores",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Sensor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"localizacao\": \"Pátio Centro - Zona A Reformada\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sensores/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sensores",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deletar Sensor",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/sensores/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sensores",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Motos",
+      "item": [
+        {
+          "name": "Criar Moto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"modelo\": \"Honda CG 160\",\n  \"cor\": \"Vermelha\",\n  \"identificadorUWB\": \"UWB001\",\n  \"sensorId\": 1,\n  \"status\": \"DISPONIVEL\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/motos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "motos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Motos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/motos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "motos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Moto por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/motos/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "motos",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Moto por UWB",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/motos/buscar/uwb?identificadorUWB=UWB001",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "motos",
+                "buscar",
+                "uwb"
+              ],
+              "query": [
+                {
+                  "key": "identificadorUWB",
+                  "value": "UWB001"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Moto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"modelo\": \"Honda CG 160 Titan\",\n  \"cor\": \"Azul\",\n  \"identificadorUWB\": \"UWB001\",\n  \"sensorId\": 1,\n  \"status\": \"DISPONIVEL\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/motos/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "motos",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deletar Moto",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/motos/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "motos",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Alocações",
+      "item": [
+        {
+          "name": "Abrir Alocação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motoId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/alocacoes/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "alocacoes",
+                "abrir"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Todas Alocações",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/alocacoes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "alocacoes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Alocações Abertas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/alocacoes/abertas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "alocacoes",
+                "abertas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Encerrar Alocação",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/alocacoes/encerrar/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "alocacoes",
+                "encerrar",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Manutenções",
+      "item": [
+        {
+          "name": "Abrir Manutenção",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motoId\": 1,\n  \"descricao\": \"Troca de óleo e filtro\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/manutencoes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "manutencoes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Todas Manutenções",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/manutencoes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "manutencoes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Manutenções Abertas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/manutencoes/abertas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "manutencoes",
+                "abertas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Encerrar Manutenção",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/manutencoes/1/encerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "manutencoes",
+                "1",
+                "encerrar"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

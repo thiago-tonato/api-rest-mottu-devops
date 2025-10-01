@@ -109,7 +109,7 @@ az container create \
   --cpu 1 --memory 1 \
   --os-type Linux \
   --ports 3306 \
-  --environment-variables MYSQL_ROOT_PASSWORD="${MYSQL_PASSWORD}" MYSQL_DATABASE="${MYSQL_DATABASE}" \
+  --environment-variables MYSQL_ROOT_PASSWORD="${MYSQL_PASSWORD}" MYSQL_DATABASE="${MYSQL_DATABASE}" MYSQL_USER="${MYSQL_USER}" MYSQL_PASSWORD="${MYSQL_PASSWORD}" \
   --ip-address Public \
   --output none
 
@@ -127,6 +127,10 @@ if [ -z "$MYSQL_IP" ]; then
     exit 1
 fi
 print_message "✅ IP do MySQL: ${MYSQL_IP}"
+
+print_step "8.1. Aguardando MySQL inicializar..."
+print_message "⏳ Aguardando 30 segundos para MySQL inicializar completamente..."
+sleep 30
 
 print_step "9. Obtendo credenciais do ACR..."
 ACR_USERNAME=$(az acr credential show --name ${ACR_NAME} --query "username" -o tsv)
