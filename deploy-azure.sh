@@ -90,11 +90,14 @@ else
 fi
 
 print_step "5. Buildando imagem Docker..."
-docker build -t ${API_IMAGE_NAME}:local . --quiet
+print_message "🔨 Iniciando build da imagem Docker..."
+docker build -t ${API_IMAGE_NAME}:local .
 if [ $? -eq 0 ]; then
     print_message "✅ Imagem Docker buildada com sucesso"
 else
     print_error "❌ Falha no build da imagem Docker"
+    print_error "💡 Dica: Verifique se todas as dependências estão corretas no pom.xml"
+    print_error "💡 Dica: Execute 'mvn clean package -DskipTests' localmente para testar"
     exit 1
 fi
 
