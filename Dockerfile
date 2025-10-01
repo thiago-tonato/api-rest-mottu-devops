@@ -5,9 +5,6 @@ WORKDIR /app
 #Copiar arquivos de configuração do Maven
 COPY pom.xml .
 
-#Baixar dependências (para cache do Docker)
-RUN mvn dependency:go-offline -B
-
 #Copiar o código fonte
 COPY src src
 

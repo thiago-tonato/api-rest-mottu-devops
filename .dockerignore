@@ -1,0 +1,47 @@
+# Ignorar arquivos desnecessários no build Docker
+target/
+!target/*.jar
+*.class
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Scripts
+deploy-azure.sh
+
+# Documentation
+README.md
+*.md
+
+# Test files
+src/test/
+
+# Logs
+logs/
+*.log
