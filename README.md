@@ -1,191 +1,421 @@
-# 🏍️ Rastreamento de Motos com UWB — API Java Spring Boot
+# 🏍️ API de Rastreamento de Motos com UWB - Mottu
 
-Aplicação Web completa desenvolvida em Spring Boot, com foco em Thymeleaf (frontend), Flyway (versionamento do banco) e Spring Security (autenticação e autorização).
-A solução oferece suporte ao rastreamento preciso de motos da Mottu, integrando controle de alocações e manutenções, além do cadastro de motos e sensores UWB.
+API REST desenvolvida em Java Spring Boot para gerenciamento de motos com tecnologia UWB (Ultra-Wideband) para rastreamento preciso.
 
----
+## 🚀 Deploy no Azure Container Instances
 
-## 📌 Objetivo
+### Pré-requisitos
 
-Resolver o problema de localização e gestão de motos em pátios de alta densidade, utilizando sensores UWB (Ultra Wideband) para rastreamento individual, aliado a uma aplicação segura e fácil de usar.
+- Docker instalado
+- Azure CLI instalado
+- PowerShell (Windows) ou Terminal (Linux/Mac)
 
----
+### 🌐 2. Login no Azure e criação do Resource Group
 
-## ⚙️ Tecnologias Utilizadas
-
-✅ Java 17
-
-✅ Spring Boot 3.4.5
-
-✅ Spring Web
-
-✅ Spring Data JPA
-
-✅ Spring Security (BCrypt, roles ADMIN/USER)
-
-✅ Thymeleaf + Thymeleaf Extras Spring Security
-
-✅ Bean Validation
-
-✅ Flyway (versionamento do banco)
-
-✅ PostgreSQL
-
-✅ Maven
-
----
-
-## 🗂️ Funcionalidades da Aplicação
-### 🔧 CRUDs com Thymeleaf
-
-- Motos
-- Sensores UWB:
-  - ✔️ Com validação de campos e mensagens de erro no formulário
-  - ✔️ Páginas estruturadas com fragments (_head, _navbar, _footer)
-
-### 🔐 Segurança
-
-- Login via formulário (Spring Security + Thymeleaf)
-- Usuários com perfis ADMIN e USER
-- Regras de acesso:
-  - /motos, /sensores, /alocacoes, /manutencoes → ADMIN e USER
-  - Apenas ADMIN pode criar, editar ou excluir
-
-### 📦 Versionamento do Banco (Flyway)
-
-- V1__create_sensores.sql → Criação da tabela de sensores
-- V2__create_motos.sql → Criação da tabela de motos
-- V3__insert_sensores.sql → Seed de sensores iniciais
-- V4__insert_motos.sql → Seed de motos iniciais
-- V5__create_roles.sql → Criação de roles
-- V6__create_users.sql → Criação de usuários
-- V7__create_alocacoes.sql → Criação de alocações
-- V8__create_manutencoes.sql → Criação de manutenções
-- V9__insert_roles_and_users.sql → Seed de roles e usuários (admin123, user123)
-
-### 🔄 Funcionalidades Avançadas
-
-#### Fluxo A — Alocação de Motos
-- Abrir alocação → moto precisa estar DISPONÍVEL
-- Encerrar alocação → moto volta a ficar DISPONÍVEL
-- Impede múltiplas alocações abertas para a mesma moto
-- Listagem de alocações abertas + histórico
-
-#### Fluxo B — Manutenção
-- Abrir manutenção → moto muda para MANUTENÇÃO
-- Fechar manutenção → moto volta para DISPONÍVEL
-- Impede alocação de moto em manutenção
-- Lista de manutenções abertas e encerradas
-
-### ✅ Extras
-
-- Formatação de datas para dd/MM/yyyy HH:mm
-- Páginas adaptadas conforme perfil:
-  - Usuário USER → sem botões de “Nova” e sem coluna de ações
-  - Usuário ADMIN → pode gerenciar todas as entidades
-
----
-
-## 🔄 Endpoints da API (REST)
-### 📌 Motos
-
-| Método | Endpoint                          | Descrição                                |
-|--------|-----------------------------------|------------------------------------------|
-GET	| api/motos	| Lista motos |
-GET	| api/motos/{id} |	Busca moto por ID |
-POST	| api/motos	| Cria nova moto |
-PUT	| api/motos/{id} | Atualiza moto existente |
-DELETE	| api/motos/{id} |	Remove moto |
-
-### 📌 Sensores
-
-| Método | Endpoint                          | Descrição                                |
-|--------|-----------------------------------|------------------------------------------|
-GET	| api/sensores |	Lista sensores |
-GET	| api/sensores/{id}	| Busca sensor por ID |
-POST	| api/sensores | Cria novo sensor |
-PUT	| api/sensores/{id}	| Atualiza sensor existente |
-DELETE	| api/sensores/{id}	| Remove sensor |
-
-### 📌 Alocações
-
-| Método | Endpoint                          | Descrição                                |
-|--------|-----------------------------------|------------------------------------------|
-GET	 | api/alocacoes  |	Lista alocações  |
-POST	 |api/alocacoes  |	Abre alocação  |
-PUT	 | api/alocacoes/{id}  |	Encerra alocação  |
-### 📌 Manutenções
-
-| Método | Endpoint                          | Descrição                                |
-|--------|-----------------------------------|------------------------------------------|
-GET	 | api/manutencoes	 | Lista manutenções  |
-POST	 | api/manutencoes  |	Abre manutenção  |
-PUT	 | api/manutencoes/{id}  | Encerra manutenção  |
-
----
-
-## 🧪 Como rodar localmente
-### Clone o repositório:
-```
-git clone https://github.com/murilors27/api-rest-mottu.git
-cd api-rest-mottu
+```powershell
+az login
+az group create --name mottu-rg --location brazilsouth
 ```
 
-### Configure o banco PostgreSQL no application.yml:
-```java
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/mottu
-    username: postgres
-    password: postgres
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-  flyway:
-    enabled: true
+### 📦 3. Azure Container Registry (ACR)
+
+Crie um registro de imagens (o nome deve ser único no mundo):
+
+```powershell
+az acr create --resource-group mottu-rg --name mottuacr01 --sku Basic --admin-enabled true
 ```
 
-### Execute o projeto:
-```
-./mvnw spring-boot:run
+Verifique o login server retornado (ex.: mottuacr01.azurecr.io).
+
+### 🐳 4. Build e Push da Imagem Java Spring Boot
+
+No diretório onde está o Dockerfile:
+
+```powershell
+docker build -t mottuapi:local .
+az acr login --name mottuacr01
+docker tag mottuapi:local mottuacr01.azurecr.io/mottuapi:1.0
+docker push mottuacr01.azurecr.io/mottuapi:1.0
 ```
 
-### Acesse:
-- Frontend (Thymeleaf): http://localhost:8080/motos
-- Login:
-  - Admin → admin / admin123
-  - User → user / user123
+### 🗄️ 5. Banco de Dados MySQL no ACI
 
----
+Crie o container com MySQL 8.0:
 
-## 📸 Exemplos de JSON (API)
-Criar Moto
+```powershell
+az container create `
+  --resource-group mottu-rg `
+  --name mottu-mysql `
+  --image mysql:8.0 `
+  --cpu 1 --memory 1 `
+  --os-type Linux `
+  --ports 3306 `
+  --environment-variables MYSQL_ROOT_PASSWORD="QualiTracker123!" MYSQL_DATABASE=mottu `
+  --ip-address Public
 ```
+
+Pegue o IP público para uso no próximo passo:
+
+```powershell
+az container show -g mottu-rg -n mottu-mysql --query "ipAddress.ip" -o tsv
+```
+
+Anote o IP, por exemplo: `00.000.000.00`
+
+### ⚙️ 6. Deploy da API Java Spring Boot no ACI
+
+Obtenha as credenciais do ACR:
+
+```powershell
+az acr credential show --name mottuacr01
+```
+
+Crie a instância da sua API, ajustando `--dns-name-label` para algo único no Azure:
+
+```powershell
+az container create `
+  --resource-group mottu-rg `
+  --name mottu-api `
+  --image mottuacr01.azurecr.io/mottuapi:1.0 `
+  --cpu 1 --memory 1.5 `
+  --os-type Linux `
+  --ports 8080 `
+  --dns-name-label mottuapi-<ID> `
+  --environment-variables `
+     SPRING_PROFILES_ACTIVE=production `
+     SPRING_DATASOURCE_URL="jdbc:mysql://<IP>:3306/mottu?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" `
+     SPRING_DATASOURCE_USERNAME="mottuadmin" `
+     SPRING_DATASOURCE_PASSWORD="QualiTracker123!" `
+     SPRING_FLYWAY_URL="jdbc:mysql://<IP>:3306/mottu?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" `
+     SPRING_FLYWAY_USER="mottuadmin" `
+     SPRING_FLYWAY_PASSWORD="QualiTracker123!" `
+  --registry-login-server mottuacr01.azurecr.io `
+  --registry-username <USER_DO_ACR> `
+  --registry-password "<SENHA_DO_ACR>" `
+  --ip-address Public
+```
+
+Verifique o FQDN:
+
+```powershell
+az container show -g mottu-rg -n mottu-api --query "ipAddress.fqdn" -o tsv
+```
+
+Exemplo retornado: `mottuapi-<ID>.brazilsouth.azurecontainer.io`
+
+### ✅ 7. Testar a API
+
+Abra no navegador:
+
+```
+http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080
+```
+
+## 🔗 Acesso Externo aos Serviços
+
+### 🗄️ **Acessar MySQL via MySQL Workbench**
+
+1. **Obtenha o IP público do MySQL:**
+```powershell
+az container show -g mottu-rg -n mottu-mysql --query "ipAddress.ip" -o tsv
+```
+
+2. **Configure a conexão no MySQL Workbench:**
+   - **Hostname**: `<IP_PUBLICO_MYSQL>` (ex: 20.123.45.67)
+   - **Port**: `3306`
+   - **Username**: `root`
+   - **Password**: `QualiTracker123!`
+   - **Default Schema**: `mottu`
+
+3. **Teste a conexão** e explore o banco de dados.
+
+### 🌐 **Testar API via Postman**
+
+1. **Obtenha o FQDN da API:**
+```powershell
+az container show -g mottu-rg -n mottu-api --query "ipAddress.fqdn" -o tsv
+```
+
+2. **Configure o Postman:**
+   - **Base URL**: `http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080`
+   - **Headers**: `Content-Type: application/json`
+
+3. **Coleções de Teste:**
+
+#### 📱 **Teste Sensores UWB**
+
+**Criar Sensor:**
+```
+POST http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080/api/sensores
+Content-Type: application/json
+
+{
+  "localizacao": "Pátio Centro - Zona A"
+}
+```
+
+**Listar Sensores:**
+```
+GET http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080/api/sensores
+```
+
+#### 🏍️ **Teste Motos**
+
+**Criar Moto:**
+```
+POST http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080/api/motos
+Content-Type: application/json
+
 {
   "modelo": "Honda CG 160",
-  "cor": "Preto",
+  "cor": "Vermelha",
   "identificadorUWB": "UWB001",
-  "sensorId": 1
+  "sensorId": 1,
+  "status": "DISPONIVEL"
 }
 ```
 
-Criar Sensor
+**Listar Motos:**
 ```
+GET http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080/api/motos
+```
+
+#### 📋 **Teste Alocações**
+
+**Abrir Alocação:**
+```
+POST http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080/api/alocacoes/abrir
+Content-Type: application/json
+
 {
-  "localizacao": "Setor A - Coluna 3"
+  "motoId": 1
 }
 ```
 
----
+**Listar Alocações:**
+```
+GET http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080/api/alocacoes
+```
 
-## 👥 Equipe
+#### 🔧 **Teste Manutenções**
 
-| Nome                                | RM       | GitHub                                |
-|-------------------------------------|----------|----------------------------------------|
-| Murilo Ribeiro Santos               | RM555109 | [@murilors27](https://github.com/murilors27) |
-| Thiago Garcia Tonato                | RM99404  | [@thiago-tonato](https://github.com/thiago-tonato) |
-| Ian Madeira Gonçalves da Silva      | RM555502 | [@IanMadeira](https://github.com/IanMadeira) |
+**Abrir Manutenção:**
+```
+POST http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080/api/manutencoes
+Content-Type: application/json
 
-**Curso**: Análise e Desenvolvimento de Sistemas  
-**Instituição**: FIAP – Faculdade de Informática e Administração Paulista
+{
+  "motoId": 1,
+  "descricao": "Troca de óleo e filtro"
+}
+```
+
+**Listar Manutenções:**
+```
+GET http://mottuapi-<ID>.brazilsouth.azurecontainer.io:8080/api/manutencoes
+```
+
+### 🔍 **Verificar Logs dos Containers**
+
+**Logs da API:**
+```powershell
+az container logs --resource-group mottu-rg --name mottu-api
+```
+
+**Logs do MySQL:**
+```powershell
+az container logs --resource-group mottu-rg --name mottu-mysql
+```
+
+### 🛠️ **Troubleshooting**
+
+**Verificar Status dos Containers:**
+```powershell
+az container list --resource-group mottu-rg --output table
+```
+
+**Reiniciar Container da API:**
+```powershell
+az container restart --resource-group mottu-rg --name mottu-api
+```
+
+**Verificar Variáveis de Ambiente:**
+```powershell
+az container show --resource-group mottu-rg --name mottu-api --query "containers[0].environmentVariables"
+```
+
+## 📚 Documentação da API
+
+### 📱 **Sensores UWB** (`/api/sensores`)
+
+**Criar (POST)**
+```json
+{
+  "localizacao": "Pátio Centro - Zona A"
+}
+```
+
+**Atualizar (PUT)**
+```json
+{
+  "id": 1,
+  "localizacao": "Pátio Centro - Zona A Reformada"
+}
+```
+
+**Listar (GET)**
+```
+GET /api/sensores
+GET /api/sensores/{id}
+```
+
+**Deletar (DELETE)**
+```
+DELETE /api/sensores/{id}
+```
+
+### 🏍️ **Motos** (`/api/motos`)
+
+**Criar (POST)**
+```json
+{
+  "modelo": "Honda CG 160",
+  "cor": "Vermelha",
+  "identificadorUWB": "UWB001",
+  "sensorId": 1,
+  "status": "DISPONIVEL"
+}
+```
+
+**Atualizar (PUT)**
+```json
+{
+  "id": 1,
+  "modelo": "Honda CG 160 Titan",
+  "cor": "Azul",
+  "identificadorUWB": "UWB001",
+  "sensorId": 1,
+  "status": "DISPONIVEL"
+}
+```
+
+**Listar (GET)**
+```
+GET /api/motos
+GET /api/motos/{id}
+GET /api/motos/buscar/uwb?identificadorUWB=UWB001
+```
+
+**Deletar (DELETE)**
+```
+DELETE /api/motos/{id}
+```
+
+### 📋 **Alocações** (`/api/alocacoes`)
+
+**Abrir Alocação (POST)**
+```json
+{
+  "motoId": 1
+}
+```
+
+**Encerrar Alocação (POST)**
+```
+POST /api/alocacoes/encerrar/1
+```
+
+**Listar (GET)**
+```
+GET /api/alocacoes
+GET /api/alocacoes/abertas
+```
+
+### 🔧 **Manutenções** (`/api/manutencoes`)
+
+**Abrir Manutenção (POST)**
+```json
+{
+  "motoId": 1,
+  "descricao": "Troca de óleo e filtro"
+}
+```
+
+**Encerrar Manutenção (PUT)**
+```
+PUT /api/manutencoes/1/encerrar
+```
+
+**Listar (GET)**
+```
+GET /api/manutencoes
+GET /api/manutencoes/abertas
+```
+
+## 🛠️ Tecnologias Utilizadas
+
+- **Java 17**
+- **Spring Boot 3.4.5**
+- **Spring Data JPA**
+- **Spring Security**
+- **Thymeleaf**
+- **MySQL 8.0**
+- **Flyway** (Migrações de banco)
+- **Lombok**
+- **Docker**
+
+## 🏗️ Estrutura do Projeto
+
+```
+src/
+├── main/
+│   ├── java/com/mottu/rastreamento/
+│   │   ├── controller/
+│   │   │   ├── api/          # Controllers REST
+│   │   │   └── view/         # Controllers Thymeleaf
+│   │   ├── dto/              # Data Transfer Objects
+│   │   ├── models/           # Entidades JPA
+│   │   ├── repository/       # Repositórios JPA
+│   │   ├── service/          # Lógica de negócio
+│   │   └── security/         # Configurações de segurança
+│   └── resources/
+│       ├── application.yml   # Configurações
+│       ├── db/migration/     # Scripts Flyway
+│       └── templates/        # Templates Thymeleaf
+└── test/                     # Testes unitários
+```
+
+## 🔧 Desenvolvimento Local
+
+### Pré-requisitos
+- Java 17+
+- Maven 3.6+
+- MySQL 8.0+
+
+### Executar localmente
+
+1. Clone o repositório
+2. Configure o MySQL local
+3. Atualize as configurações no `application.yml`
+4. Execute:
+```bash
+mvn spring-boot:run
+```
+
+A aplicação estará disponível em: `http://localhost:8080`
+
+## 📝 Status das Entidades
+
+### Status da Moto
+- `DISPONIVEL` - Moto disponível para alocação
+- `ALOCADA` - Moto em uso
+- `MANUTENCAO` - Moto em manutenção
+- `INDISPONIVEL` - Moto indisponível
+
+### Status da Alocação
+- `ABERTA` - Alocação ativa
+- `FECHADA` - Alocação encerrada
+
+### Status da Manutenção
+- `ABERTA` - Manutenção em andamento
+- `FECHADA` - Manutenção concluída
