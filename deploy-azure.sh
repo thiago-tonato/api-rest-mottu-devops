@@ -52,16 +52,6 @@ print_message "   - ACR Name: ${ACR_NAME}"
 print_message "   - DNS Name: ${DNS_NAME}"
 print_message "   - Location: ${LOCATION}"
 
-
-print_step "1. Fazendo login no Azure..."
-az login --output none
-if [ $? -eq 0 ]; then
-    print_message "✅ Login realizado com sucesso"
-else
-    print_error "❌ Falha no login do Azure"
-    exit 1
-fi
-
 print_step "2. Criando Resource Group..."
 az group create --name ${RESOURCE_GROUP} --location ${LOCATION} --output none
 if [ $? -eq 0 ]; then
