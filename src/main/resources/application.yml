@@ -3,31 +3,31 @@ spring:
     name: rastreamento
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/mottu
-    username: mottu
-    password: NovaSenha123!
-    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/qualitracker}
+    username: ${SPRING_DATASOURCE_USERNAME:qualitracker_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:qualitracker_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: ${SHOW_SQL:true}
     properties:
       hibernate:
         format_sql: true
 
   thymeleaf:
-    cache: false
+    cache: ${THYMELEAF_CACHE:false}
 
   flyway:
     enabled: true
     locations: classpath:db/migration
-    url: jdbc:postgresql://localhost:5432/mottu
-    user: mottu
-    password: NovaSenha123!
+    url: ${SPRING_FLYWAY_URL:${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/qualitracker}}
+    user: ${SPRING_FLYWAY_USER:${SPRING_DATASOURCE_USERNAME:qualitracker_user}}
+    password: ${SPRING_FLYWAY_PASSWORD:${SPRING_DATASOURCE_PASSWORD:qualitracker_pass}}
     validate-on-migrate: false
     baseline-on-migrate: true
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   address: 0.0.0.0

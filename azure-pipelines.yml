@@ -1,0 +1,58 @@
+trigger:
+  branches:
+    include:
+      - master
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: mottu-variables
+
+stages:
+  - stage: Build
+    displayName: 'Build e Testes'
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+          
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: '17'
+              jdkArchitecture: 'x64'
+          
+          - task: Maven@3
+            displayName: 'Compilar e Testar'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'clean test package'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: '$(System.DefaultWorkingDirectory)/target/*.jar'
+              artifactName: 'app'
+
+  - stage: Deploy
+    displayName: 'Deploy'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: Deploy
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: app
+                
+                - task: AzureWebApp@1
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    appName: '$(webAppName)'
+                    package: '$(Pipeline.Workspace)/app/*.jar'
+
