@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<div th:replace="~{fragments/_navbar :: navbar}"></div>
+
+<div class="card-dark" style="max-width:900px;">
+    <h1>Locações</h1>
+
+    <div style="text-align:right; margin-bottom:15px;" sec:authorize="hasRole('ADMIN')">
+        <a th:href="@{/alocacoes/nova}" class="btn-primary">Nova Locação</a>
+    </div>
+
+    <table class="table-dark">
+        <tr>
+            <th>ID</th><th>Moto</th><th>Início</th><th>Fim</th><th>Status</th>
+            <th sec:authorize="hasRole('ADMIN')">Ações</th>
+        </tr>
+        <tr th:each="alocacao : ${alocacoes}">
+            <td th:text="${alocacao.id}"></td>
+            <td th:text="${alocacao.moto.modelo} + ' - ' + ${alocacao.moto.identificadorUWB}"></td>
+            <td th:text="${#temporals.format(alocacao.inicio, 'dd/MM/yyyy HH:mm')}"></td>
+            <td th:text="${alocacao.fim != null ? #temporals.format(alocacao.fim, 'dd/MM/yyyy HH:mm') : '-'}"></td>
+            <td th:text="${alocacao.status}"></td>
+            <td sec:authorize="hasRole('ADMIN')">
+                <a th:if="${alocacao.status.name() == 'ABERTA'}"
+                   th:href="@{'/alocacoes/encerrar/' + ${alocacao.id}}"
+                   class="btn-danger">Encerrar</a>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div th:replace="~{fragments/_footer :: footer}"></div>
+</body>
+</html>

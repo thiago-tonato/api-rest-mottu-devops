@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/_head :: head}"></head>
+<body>
+<div th:replace="~{fragments/_navbar :: navbar}"></div>
+
+<div class="card-dark">
+    <h1>Abrir Locação</h1>
+
+    <form th:action="@{/alocacoes}" th:object="${alocacao}" method="post">
+        <label>Moto:</label>
+        <select th:field="*{motoId}" required>
+            <option th:each="moto : ${motos}" th:value="${moto.id}"
+                    th:text="${moto.modelo} + ' - ' + ${moto.identificadorUWB}"></option>
+        </select>
+
+        <div style="margin-top:15px; text-align:right;">
+            <button type="submit" class="btn-primary">Abrir</button>
+            <a th:href="@{/alocacoes}" style="margin-left:10px;">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<div th:replace="~{fragments/_footer :: footer}"></div>
+</body>
+</html>
