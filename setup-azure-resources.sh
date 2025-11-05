@@ -15,7 +15,9 @@ NC='\033[0m' # No Color
 PROJECT_NAME="qualitracker"
 COMPANY_NAME="mottu"
 RESOURCE_GROUP="${PROJECT_NAME}-${COMPANY_NAME}-rg"
-LOCATION="eastus"  # Altere para a região desejada
+# Tenta usar região brasileira primeiro, depois fallback
+LOCATION="brazilsouth"  # Região brasileira (São Paulo)
+# Alternativas se não disponível: eastus, westus2, westeurope
 
 # MySQL
 MYSQL_SERVER_NAME="${PROJECT_NAME}-mysql-server"
@@ -71,11 +73,14 @@ echo ""
 # ============================================
 # 2. Criar Azure Database for MySQL
 # ============================================
-echo -e "${YELLOW}[2/7] Criando Azure Database for MySQL...${NC}"
+echo -e "${YELLOW}[2/6] Criando Azure Database for MySQL...${NC}"
 if az mysql flexible-server show --resource-group $RESOURCE_GROUP --name $MYSQL_SERVER_NAME &> /dev/null; then
     echo -e "${YELLOW}MySQL Server já existe.${NC}"
 else
-    az mysql flexible-server create \
+    echo -e "${YELLOW}Tentando criar MySQL na região: ${LOCATION}${NC}"
+    
+    # Tenta criar com SKU Burstable básica
+    if az mysql flexible-server create \
         --resource-group $RESOURCE_GROUP \
         --name $MYSQL_SERVER_NAME \
         --location $LOCATION \
@@ -87,9 +92,53 @@ else
         --storage-size 32 \
         --version 8.0.21 \
         --high-availability Disabled \
-        --storage-auto-grow Enabled
+        --storage-auto-grow Enabled \
+        --output none 2>&1; then
+        
+        echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME}${NC}"
+    else
+        echo -e "${YELLOW}SKU Standard_B1ms não disponível. Tentando Standard_B1s...${NC}"
+        
+        # Tenta com SKU menor
+        if az mysql flexible-server create \
+            --resource-group $RESOURCE_GROUP \
+            --name $MYSQL_SERVER_NAME \
+            --location $LOCATION \
+            --admin-user $MYSQL_ADMIN_USER \
+            --admin-password $MYSQL_ADMIN_PASSWORD \
+            --sku-name Standard_B1s \
+            --tier Burstable \
+            --public-access 0.0.0.0 \
+            --storage-size 20 \
+            --version 8.0.21 \
+            --high-availability Disabled \
+            --storage-auto-grow Enabled \
+            --output none 2>&1; then
+            
+            echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME}${NC}"
+        else
+            echo -e "${RED}Erro ao criar MySQL. Tentando região alternativa (eastus)...${NC}"
+            
+            # Tenta região alternativa
+            LOCATION="eastus"
+            az mysql flexible-server create \
+                --resource-group $RESOURCE_GROUP \
+                --name $MYSQL_SERVER_NAME \
+                --location $LOCATION \
+                --admin-user $MYSQL_ADMIN_USER \
+                --admin-password $MYSQL_ADMIN_PASSWORD \
+                --sku-name Standard_B1s \
+                --tier Burstable \
+                --public-access 0.0.0.0 \
+                --storage-size 20 \
+                --version 8.0.21 \
+                --high-availability Disabled \
+                --storage-auto-grow Enabled
+            
+            echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME} (região: ${LOCATION})${NC}"
+        fi
+    fi
     
-    echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME}${NC}"
     echo -e "${GREEN}  Admin User: ${MYSQL_ADMIN_USER}${NC}"
     echo -e "${GREEN}  Admin Password: ${MYSQL_ADMIN_PASSWORD}${NC}"
 fi
@@ -101,7 +150,7 @@ echo ""
 # ============================================
 # 3. Configurar Firewall do MySQL
 # ============================================
-echo -e "${YELLOW}[3/7] Configurando firewall do MySQL...${NC}"
+echo -e "${YELLOW}[3/6] Configurando firewall do MySQL...${NC}"
 
 # Permitir acesso do Azure Services
 az mysql flexible-server firewall-rule create \
@@ -131,7 +180,7 @@ echo ""
 # ============================================
 # 4. Criar Banco de Dados
 # ============================================
-echo -e "${YELLOW}[4/7] Criando banco de dados...${NC}"
+echo -e "${YELLOW}[4/6] Criando banco de dados...${NC}"
 
 # Criar banco de dados usando MySQL CLI ou Azure CLI
 az mysql flexible-server db create \
@@ -146,7 +195,7 @@ echo ""
 # ============================================
 # 5. Criar Usuário da Aplicação no MySQL
 # ============================================
-echo -e "${YELLOW}[5/7] Criando usuário da aplicação no MySQL...${NC}"
+echo -e "${YELLOW}[5/6] Criando usuário da aplicação no MySQL...${NC}"
 
 # Criar script SQL temporário para criar usuário
 SQL_SCRIPT="/tmp/create_user_${RANDOM}.sql"
@@ -183,6 +232,7 @@ echo -e "${YELLOW}[6/6] Criando App Service Plan e Web App...${NC}"
 if az appservice plan show --resource-group $RESOURCE_GROUP --name $APP_SERVICE_PLAN_NAME &> /dev/null; then
     echo -e "${YELLOW}App Service Plan já existe.${NC}"
 else
+    # Usar a mesma região onde o MySQL foi criado
     az appservice plan create \
         --resource-group $RESOURCE_GROUP \
         --name $APP_SERVICE_PLAN_NAME \
