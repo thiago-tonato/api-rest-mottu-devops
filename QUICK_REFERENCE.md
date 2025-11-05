@@ -23,21 +23,6 @@
 | `azureSubscription` | Normal |
 | `webAppName` | Normal |
 
-## Comandos Úteis
-
-```bash
-# Build local
-./mvnw clean package
-
-# Docker
-docker build -t qualitracker-rastreamento:latest .
-docker run -p 8080:8080 qualitracker-rastreamento:latest
-
-# Azure
-az login
-az group list
-```
-
 ## Troubleshooting
 
 **Pipeline falha**: Verificar logs, service connections, variáveis
