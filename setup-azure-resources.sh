@@ -77,66 +77,51 @@ echo -e "${YELLOW}[2/6] Criando Azure Database for MySQL...${NC}"
 if az mysql flexible-server show --resource-group $RESOURCE_GROUP --name $MYSQL_SERVER_NAME &> /dev/null; then
     echo -e "${YELLOW}MySQL Server já existe.${NC}"
 else
-    echo -e "${YELLOW}Tentando criar MySQL na região: ${LOCATION}${NC}"
+    # Lista de regiões e SKUs para tentar
+    REGIONS=("eastus" "westus2" "westeurope" "brazilsouth" "southcentralus")
+    SKUS=("Standard_B1s" "Standard_B1ms" "Standard_B2s")
     
-    # Tenta criar com SKU Burstable básica
-    if az mysql flexible-server create \
-        --resource-group $RESOURCE_GROUP \
-        --name $MYSQL_SERVER_NAME \
-        --location $LOCATION \
-        --admin-user $MYSQL_ADMIN_USER \
-        --admin-password $MYSQL_ADMIN_PASSWORD \
-        --sku-name Standard_B1ms \
-        --tier Burstable \
-        --public-access 0.0.0.0 \
-        --storage-size 32 \
-        --version 8.0.21 \
-        --high-availability Disabled \
-        --storage-auto-grow Enabled \
-        --output none 2>&1; then
+    MYSQL_CREATED=false
+    
+    for REGION in "${REGIONS[@]}"; do
+        echo -e "${YELLOW}Tentando região: ${REGION}${NC}"
         
-        echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME}${NC}"
-    else
-        echo -e "${YELLOW}SKU Standard_B1ms não disponível. Tentando Standard_B1s...${NC}"
-        
-        # Tenta com SKU menor
-        if az mysql flexible-server create \
-            --resource-group $RESOURCE_GROUP \
-            --name $MYSQL_SERVER_NAME \
-            --location $LOCATION \
-            --admin-user $MYSQL_ADMIN_USER \
-            --admin-password $MYSQL_ADMIN_PASSWORD \
-            --sku-name Standard_B1s \
-            --tier Burstable \
-            --public-access 0.0.0.0 \
-            --storage-size 20 \
-            --version 8.0.21 \
-            --high-availability Disabled \
-            --storage-auto-grow Enabled \
-            --output none 2>&1; then
+        for SKU in "${SKUS[@]}"; do
+            echo -e "${YELLOW}  Tentando SKU: ${SKU}${NC}"
             
-            echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME}${NC}"
-        else
-            echo -e "${RED}Erro ao criar MySQL. Tentando região alternativa (eastus)...${NC}"
-            
-            # Tenta região alternativa
-            LOCATION="eastus"
-            az mysql flexible-server create \
+            if az mysql flexible-server create \
                 --resource-group $RESOURCE_GROUP \
                 --name $MYSQL_SERVER_NAME \
-                --location $LOCATION \
+                --location $REGION \
                 --admin-user $MYSQL_ADMIN_USER \
                 --admin-password $MYSQL_ADMIN_PASSWORD \
-                --sku-name Standard_B1s \
+                --sku-name $SKU \
                 --tier Burstable \
                 --public-access 0.0.0.0 \
                 --storage-size 20 \
                 --version 8.0.21 \
                 --high-availability Disabled \
-                --storage-auto-grow Enabled
-            
-            echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME} (região: ${LOCATION})${NC}"
-        fi
+                --storage-auto-grow Enabled \
+                --output none 2>/dev/null; then
+                
+                LOCATION=$REGION
+                MYSQL_CREATED=true
+                echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME} (região: ${REGION}, SKU: ${SKU})${NC}"
+                break 2
+            fi
+        done
+    done
+    
+    if [ "$MYSQL_CREATED" = false ]; then
+        echo -e "${RED}❌ Erro: Não foi possível criar MySQL em nenhuma região/SKU testada.${NC}"
+        echo -e "${YELLOW}Possíveis causas:${NC}"
+        echo "  1. Subscription não permite criar MySQL Flexible Server"
+        echo "  2. Cota de recursos esgotada"
+        echo "  3. Verifique no portal Azure se o serviço está disponível"
+        echo ""
+        echo -e "${YELLOW}Tente criar manualmente no portal Azure:${NC}"
+        echo "  https://portal.azure.com → Create a resource → Azure Database for MySQL"
+        exit 1
     fi
     
     echo -e "${GREEN}  Admin User: ${MYSQL_ADMIN_USER}${NC}"
