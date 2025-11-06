@@ -217,15 +217,46 @@ echo -e "${YELLOW}[6/6] Criando App Service Plan e Web App...${NC}"
 if az appservice plan show --resource-group $RESOURCE_GROUP --name $APP_SERVICE_PLAN_NAME &> /dev/null; then
     echo -e "${YELLOW}App Service Plan já existe.${NC}"
 else
-    # Usar a mesma região onde o MySQL foi criado
-    az appservice plan create \
+    # Tentar Free tier primeiro (F1), depois B1
+    echo -e "${YELLOW}Tentando criar App Service Plan (Free tier)...${NC}"
+    
+    if az appservice plan create \
         --resource-group $RESOURCE_GROUP \
         --name $APP_SERVICE_PLAN_NAME \
         --location $LOCATION \
         --is-linux \
-        --sku B1
-    
-    echo -e "${GREEN}✓ App Service Plan criado: ${APP_SERVICE_PLAN_NAME}${NC}"
+        --sku FREE 2>/dev/null; then
+        
+        echo -e "${GREEN}✓ App Service Plan criado: ${APP_SERVICE_PLAN_NAME} (Free tier)${NC}"
+    else
+        echo -e "${YELLOW}Free tier não disponível. Tentando B1...${NC}"
+        
+        if az appservice plan create \
+            --resource-group $RESOURCE_GROUP \
+            --name $APP_SERVICE_PLAN_NAME \
+            --location $LOCATION \
+            --is-linux \
+            --sku B1 2>/dev/null; then
+            
+            echo -e "${GREEN}✓ App Service Plan criado: ${APP_SERVICE_PLAN_NAME} (B1)${NC}"
+        else
+            echo -e "${RED}❌ Erro: Não foi possível criar App Service Plan.${NC}"
+            echo -e "${YELLOW}Possíveis causas:${NC}"
+            echo "  1. Cota de recursos esgotada (Basic VMs)"
+            echo "  2. Subscription não permite criar App Service Plans pagos"
+            echo ""
+            echo -e "${YELLOW}Soluções:${NC}"
+            echo "  1. Solicite aumento de quota:"
+            echo "     https://portal.azure.com → Subscriptions → Usage + quotas"
+            echo "  2. Ou crie manualmente no portal Azure com Free tier (F1)"
+            echo "  3. Ou use Azure Container Instances (alternativa)"
+            echo ""
+            echo -e "${YELLOW}Tente criar manualmente:${NC}"
+            echo "  https://portal.azure.com → Create a resource → Web App"
+            echo "  Escolha: Free (F1) ou Basic (B1) se tiver quota"
+            exit 1
+        fi
+    fi
 fi
 
 # Criar Web App (Java)
