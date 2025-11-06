@@ -261,35 +261,36 @@ fi
 
 # Criar Web App (Java)
 if az webapp show --resource-group $RESOURCE_GROUP --name $WEB_APP_NAME &> /dev/null; then
-    echo -e "${YELLOW}Web App já existe.${NC}"
+    echo -e "${YELLOW}Web App já existe. Configurando runtime...${NC}"
+    # Atualizar runtime se já existe
+    az webapp config set \
+        --resource-group $RESOURCE_GROUP \
+        --name $WEB_APP_NAME \
+        --linux-fx-version "JAVA|17-java17" \
+        --output none 2>/dev/null || true
 else
-    # Criar Web App sem runtime primeiro (para Linux)
+    # Criar Web App com runtime Linux Java
+    echo -e "${YELLOW}Criando Web App...${NC}"
     az webapp create \
         --resource-group $RESOURCE_GROUP \
         --plan $APP_SERVICE_PLAN_NAME \
-        --name $WEB_APP_NAME
+        --name $WEB_APP_NAME \
+        --runtime "JAVA:17-java17"
     
     echo -e "${GREEN}✓ Web App criada: ${WEB_APP_NAME}${NC}"
 fi
 
-# Configurar Java runtime para Linux
-echo -e "${YELLOW}Configurando Java runtime...${NC}"
-az webapp config set \
-    --resource-group $RESOURCE_GROUP \
-    --name $WEB_APP_NAME \
-    --linux-fx-version "JAVA|17-java17" \
-    --output none
-
 # Configurações Java adicionais
+echo -e "${YELLOW}Configurando Web App...${NC}"
 az webapp config appsettings set \
     --resource-group $RESOURCE_GROUP \
     --name $WEB_APP_NAME \
     --settings \
         WEBSITE_WEBDEPLOY_USE_SCM=true \
         SCM_DO_BUILD_DURING_DEPLOYMENT=true \
-    --output none
+    --output none 2>/dev/null || true
 
-echo -e "${GREEN}✓ Java runtime configurado${NC}"
+echo -e "${GREEN}✓ Web App configurada${NC}"
 
 # Habilitar HTTPS
 az webapp update \
