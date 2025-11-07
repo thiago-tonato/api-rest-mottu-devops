@@ -18,10 +18,10 @@ stages:
         steps:
           - checkout: self
 
-          - task: JavaToolInstaller@0
+          - task: UseJavaVersion@1
             inputs:
               versionSpec: '17'
-              jdkArchitecture: 'x64'
+              architecture: 'x64'
 
           - task: Maven@3
             displayName: 'Compilar e Testar'
@@ -44,24 +44,22 @@ stages:
             displayName: 'Buildar imagem no ACR'
             inputs:
               azureSubscription: '$(azureSubscription)'
-              scriptType: bash
+              scriptType: pscore
               scriptLocation: inlineScript
               inlineScript: |
-                set -euo pipefail
+                $ErrorActionPreference = 'Stop'
 
-                APP_IMAGE_REPO="$(appImageName)"
-                IMAGE_TAG="$(Build.BuildId)"
+                $appImageRepo = '$(appImageName)'
+                if ([string]::IsNullOrWhiteSpace($appImageRepo)) {
+                  Write-Error 'Variável appImageName não está definida.'
+                }
 
-                if [[ "$APP_IMAGE_REPO" == "$(appImageName)" || -z "$APP_IMAGE_REPO" ]]; then
-                  echo "Variável appImageName não está definida." >&2
-                  exit 1
-                fi
-
-                echo "Buildando imagem ${APP_IMAGE_REPO}:${IMAGE_TAG} (e latest) no ACR $(acrName)..."
-                az acr build \
-                  --registry "$(acrName)" \
-                  --image "${APP_IMAGE_REPO}:${IMAGE_TAG}" \
-                  --image "${APP_IMAGE_REPO}:latest" \
+                $imageTag = '$(Build.BuildId)'
+                Write-Host "Buildando imagem ${appImageRepo}:${imageTag} e latest no ACR $(acrName)..."
+                az acr build `
+                  --registry "$(acrName)" `
+                  --image "${appImageRepo}:${imageTag}" `
+                  --image "${appImageRepo}:latest" `
                   .
 
   - stage: Deploy
@@ -81,109 +79,85 @@ stages:
                   displayName: 'Criar ou atualizar container group'
                   inputs:
                     azureSubscription: '$(azureSubscription)'
-                    scriptType: bash
+                    scriptType: pscore
                     scriptLocation: inlineScript
                     inlineScript: |
-                      set -euo pipefail
+                      $ErrorActionPreference = 'Stop'
 
-                      RESOURCE_GROUP="$(resourceGroup)"
-                      CONTAINER_GROUP="$(containerGroupName)"
-                      ACR_NAME="$(acrName)"
-                      APP_IMAGE_REPO="$(appImageName)"
-                      MYSQL_IMAGE_REPO="$(mysqlImageName)"
-                      MYSQL_IMAGE_TAG="$(mysqlImageTag)"
-                      MYSQL_DATABASE="$(mysqlDatabase)"
-                      MYSQL_USER="$(mysqlUser)"
-                      MYSQL_PASSWORD="$(mysqlPassword)"
-                      MYSQL_ROOT_PASSWORD="$(mysqlRootPassword)"
-                      LOCATION="$(location)"
-                      DNS_LABEL="$(dnsLabel)"
-                      APP_CONTAINER_NAME="$(appContainerName)"
-                      MYSQL_CONTAINER_NAME="$(mysqlContainerName)"
-
-                      check_required() {
-                        local value="$1"
-                        local name="$2"
-                        if [[ -z "$value" ]]; then
-                          echo "Variável $name não definida no pipeline." >&2
-                          exit 1
-                        fi
+                      function Require($value, $name) {
+                        if ([string]::IsNullOrWhiteSpace($value)) {
+                          Write-Error "Variável $name não definida no pipeline."
+                        }
+                        return $value
                       }
 
-                      check_required "$RESOURCE_GROUP" "resourceGroup"
-                      check_required "$CONTAINER_GROUP" "containerGroupName"
-                      check_required "$ACR_NAME" "acrName"
-                      check_required "$APP_IMAGE_REPO" "appImageName"
-                      check_required "$MYSQL_IMAGE_REPO" "mysqlImageName"
-                      check_required "$MYSQL_IMAGE_TAG" "mysqlImageTag"
-                      check_required "$MYSQL_DATABASE" "mysqlDatabase"
-                      check_required "$MYSQL_USER" "mysqlUser"
-                      check_required "$MYSQL_PASSWORD" "mysqlPassword"
-                      check_required "$MYSQL_ROOT_PASSWORD" "mysqlRootPassword"
-                      check_required "$LOCATION" "location"
-                      check_required "$DNS_LABEL" "dnsLabel"
+                      $resourceGroup = Require '$(resourceGroup)' 'resourceGroup'
+                      $containerGroup = Require '$(containerGroupName)' 'containerGroupName'
+                      $acrName = Require '$(acrName)' 'acrName'
+                      $appImageRepo = Require '$(appImageName)' 'appImageName'
+                      $mysqlImageRepo = Require '$(mysqlImageName)' 'mysqlImageName'
+                      $mysqlImageTag = Require '$(mysqlImageTag)' 'mysqlImageTag'
+                      $mysqlDatabase = Require '$(mysqlDatabase)' 'mysqlDatabase'
+                      $mysqlUser = Require '$(mysqlUser)' 'mysqlUser'
+                      $mysqlPassword = Require '$(mysqlPassword)' 'mysqlPassword'
+                      $mysqlRootPassword = Require '$(mysqlRootPassword)' 'mysqlRootPassword'
+                      $location = Require '$(location)' 'location'
+                      $dnsLabel = Require '$(dnsLabel)' 'dnsLabel'
 
-                      if [[ -z "$APP_CONTAINER_NAME" ]]; then
-                        APP_CONTAINER_NAME="qualitracker-app"
-                      fi
-                      if [[ -z "$MYSQL_CONTAINER_NAME" ]]; then
-                        MYSQL_CONTAINER_NAME="qualitracker-mysql"
-                      fi
+                      $appContainerName = '$(appContainerName)'
+                      if ([string]::IsNullOrWhiteSpace($appContainerName)) { $appContainerName = 'qualitracker-app' }
+                      $mysqlContainerName = '$(mysqlContainerName)'
+                      if ([string]::IsNullOrWhiteSpace($mysqlContainerName)) { $mysqlContainerName = 'qualitracker-mysql' }
 
-                      LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv)
-                      IMAGE_TAG="$(Build.BuildId)"
-                      APP_IMAGE_FULL="${LOGIN_SERVER}/${APP_IMAGE_REPO}:${IMAGE_TAG}"
-                      MYSQL_IMAGE_FULL="${LOGIN_SERVER}/${MYSQL_IMAGE_REPO}:${MYSQL_IMAGE_TAG}"
+                      $loginServer = az acr show --name $acrName --query loginServer -o tsv
+                      $imageTag = '$(Build.BuildId)'
+                      $appImageFull = "$loginServer/$appImageRepo:$imageTag"
+                      $mysqlImageFull = "$loginServer/$mysqlImageRepo:$mysqlImageTag"
 
-                      echo "Garantindo imagem MySQL ${MYSQL_IMAGE_REPO}:${MYSQL_IMAGE_TAG} no ACR..."
-                      MYSQL_TAG_EXISTS=$(az acr repository show-tags --name "$ACR_NAME" --repository "$MYSQL_IMAGE_REPO" --query "contains(@, '${MYSQL_IMAGE_TAG}')" -o tsv 2>/dev/null || echo false)
-                      if [[ "$MYSQL_TAG_EXISTS" != "true" ]]; then
-                        az acr import \
-                          --name "$ACR_NAME" \
-                          --source "docker.io/library/mysql:${MYSQL_IMAGE_TAG}" \
-                          --image "${MYSQL_IMAGE_REPO}:${MYSQL_IMAGE_TAG}"
-                      fi
+                      Write-Host "Garantindo imagem MySQL ${mysqlImageRepo}:${mysqlImageTag} no ACR..."
+                      $tagExists = az acr repository show-tags --name $acrName --repository $mysqlImageRepo --query "contains(@, '${mysqlImageTag}')" -o tsv 2>$null
+                      if ($tagExists -ne 'true') {
+                        az acr import --name $acrName --source "docker.io/library/mysql:$mysqlImageTag" --image "$mysqlImageRepo:$mysqlImageTag"
+                      }
 
-                      echo "Recuperando credenciais do ACR..."
-                      ACR_USERNAME=$(az acr credential show --name "$ACR_NAME" --query username -o tsv)
-                      ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query passwords[0].value -o tsv)
+                      Write-Host 'Recuperando credenciais do ACR...'
+                      $acrUsername = az acr credential show --name $acrName --query username -o tsv
+                      $acrPassword = az acr credential show --name $acrName --query passwords[0].value -o tsv
 
-                      echo "Removendo container group existente (se houver)..."
-                      if az container show --resource-group "$RESOURCE_GROUP" --name "$CONTAINER_GROUP" >/dev/null 2>&1; then
-                        az container delete --resource-group "$RESOURCE_GROUP" --name "$CONTAINER_GROUP" --yes --no-wait
-                        echo "Aguardando remoção..."
-                        while az container show --resource-group "$RESOURCE_GROUP" --name "$CONTAINER_GROUP" >/dev/null 2>&1; do
-                          sleep 5
-                        done
-                      fi
+                      Write-Host 'Removendo container group existente (se houver)...'
+                      $exists = az container show --resource-group $resourceGroup --name $containerGroup >$null 2>&1
+                      if ($LASTEXITCODE -eq 0) {
+                        az container delete --resource-group $resourceGroup --name $containerGroup --yes --no-wait
+                        Write-Host 'Aguardando remoção...'
+                        do {
+                          Start-Sleep -Seconds 5
+                          az container show --resource-group $resourceGroup --name $containerGroup >$null 2>&1
+                        } while ($LASTEXITCODE -eq 0)
+                      }
 
-                      echo "Criando novo container group ${CONTAINER_GROUP}..."
-                      TEMPLATE_FILE=$(mktemp)
-                      trap 'rm -f "$TEMPLATE_FILE"' EXIT
-
-                      SPRING_DATASOURCE_URL="jdbc:mysql://${MYSQL_CONTAINER_NAME}:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-
-                      cat > "$TEMPLATE_FILE" <<EOF
+                      Write-Host "Criando novo container group ${containerGroup}..."
+                      $springDatasourceUrl = "jdbc:mysql://${mysqlContainerName}:3306/${mysqlDatabase}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+                      $template = @"
 {
-  "name": "${CONTAINER_GROUP}",
-  "location": "${LOCATION}",
+  "name": "$containerGroup",
+  "location": "$location",
   "properties": {
     "containers": [
       {
-        "name": "${APP_CONTAINER_NAME}",
+        "name": "$appContainerName",
         "properties": {
-          "image": "${APP_IMAGE_FULL}",
+          "image": "$appImageFull",
           "ports": [ { "port": 8080 } ],
           "environmentVariables": [
             { "name": "SERVER_PORT", "value": "8080" },
-            { "name": "DB_HOST", "value": "${MYSQL_CONTAINER_NAME}" },
+            { "name": "DB_HOST", "value": "$mysqlContainerName" },
             { "name": "DB_PORT", "value": "3306" },
-            { "name": "SPRING_DATASOURCE_URL", "value": "${SPRING_DATASOURCE_URL}" },
-            { "name": "SPRING_DATASOURCE_USERNAME", "value": "${MYSQL_USER}" },
-            { "name": "SPRING_DATASOURCE_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
-            { "name": "SPRING_FLYWAY_URL", "value": "${SPRING_DATASOURCE_URL}" },
-            { "name": "SPRING_FLYWAY_USER", "value": "${MYSQL_USER}" },
-            { "name": "SPRING_FLYWAY_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
+            { "name": "SPRING_DATASOURCE_URL", "value": "$springDatasourceUrl" },
+            { "name": "SPRING_DATASOURCE_USERNAME", "value": "$mysqlUser" },
+            { "name": "SPRING_DATASOURCE_PASSWORD", "secureValue": "$mysqlPassword" },
+            { "name": "SPRING_FLYWAY_URL", "value": "$springDatasourceUrl" },
+            { "name": "SPRING_FLYWAY_USER", "value": "$mysqlUser" },
+            { "name": "SPRING_FLYWAY_PASSWORD", "secureValue": "$mysqlPassword" },
             { "name": "JAVA_OPTS", "value": "-Xms256m -Xmx512m" }
           ],
           "resources": {
@@ -195,15 +169,15 @@ stages:
         }
       },
       {
-        "name": "${MYSQL_CONTAINER_NAME}",
+        "name": "$mysqlContainerName",
         "properties": {
-          "image": "${MYSQL_IMAGE_FULL}",
+          "image": "$mysqlImageFull",
           "ports": [ { "port": 3306 } ],
           "environmentVariables": [
-            { "name": "MYSQL_DATABASE", "value": "${MYSQL_DATABASE}" },
-            { "name": "MYSQL_USER", "value": "${MYSQL_USER}" },
-            { "name": "MYSQL_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
-            { "name": "MYSQL_ROOT_PASSWORD", "secureValue": "${MYSQL_ROOT_PASSWORD}" }
+            { "name": "MYSQL_DATABASE", "value": "$mysqlDatabase" },
+            { "name": "MYSQL_USER", "value": "$mysqlUser" },
+            { "name": "MYSQL_PASSWORD", "secureValue": "$mysqlPassword" },
+            { "name": "MYSQL_ROOT_PASSWORD", "secureValue": "$mysqlRootPassword" }
           ],
           "resources": {
             "requests": {
@@ -218,26 +192,30 @@ stages:
     "restartPolicy": "Always",
     "imageRegistryCredentials": [
       {
-        "server": "${LOGIN_SERVER}",
-        "username": "${ACR_USERNAME}",
-        "password": "${ACR_PASSWORD}"
+        "server": "$loginServer",
+        "username": "$acrUsername",
+        "password": "$acrPassword"
       }
     ],
     "ipAddress": {
       "type": "Public",
-      "dnsNameLabel": "${DNS_LABEL}",
+      "dnsNameLabel": "$dnsLabel",
       "ports": [ { "protocol": "TCP", "port": 8080 } ]
     }
   }
 }
-EOF
+"@
 
-                      az container create \
-                        --resource-group "$RESOURCE_GROUP" \
-                        --file "$TEMPLATE_FILE" >/dev/null
+                      $tempFile = New-TemporaryFile
+                      $template | Out-File -FilePath $tempFile -Encoding utf8
+                      try {
+                        az container create --resource-group $resourceGroup --file $tempFile | Out-Null
+                      }
+                      finally {
+                        Remove-Item $tempFile -Force
+                      }
 
-                      echo "Container group ${CONTAINER_GROUP} criado com sucesso."
-
-                      APP_URL="http://${DNS_LABEL}.${LOCATION}.azurecontainer.io:8080"
-                      echo "Aplicação acessível em: ${APP_URL}"
+                      Write-Host "Container group ${containerGroup} criado com sucesso."
+                      $appUrl = "http://${dnsLabel}.${location}.azurecontainer.io:8080"
+                      Write-Host "Aplicação acessível em: $appUrl"
 
