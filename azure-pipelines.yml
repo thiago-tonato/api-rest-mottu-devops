@@ -137,77 +137,64 @@ stages:
 
                       Write-Host "Criando novo container group ${containerGroup}..."
                       $springDatasourceUrl = "jdbc:mysql://${mysqlContainerName}:3306/${mysqlDatabase}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-                      $template = @"
-{
-  "name": "$containerGroup",
-  "location": "$location",
-  "properties": {
-    "containers": [
-      {
-        "name": "$appContainerName",
-        "properties": {
-          "image": "$appImageFull",
-          "ports": [ { "port": 8080 } ],
-          "environmentVariables": [
-            { "name": "SERVER_PORT", "value": "8080" },
-            { "name": "DB_HOST", "value": "$mysqlContainerName" },
-            { "name": "DB_PORT", "value": "3306" },
-            { "name": "SPRING_DATASOURCE_URL", "value": "$springDatasourceUrl" },
-            { "name": "SPRING_DATASOURCE_USERNAME", "value": "$mysqlUser" },
-            { "name": "SPRING_DATASOURCE_PASSWORD", "secureValue": "$mysqlPassword" },
-            { "name": "SPRING_FLYWAY_URL", "value": "$springDatasourceUrl" },
-            { "name": "SPRING_FLYWAY_USER", "value": "$mysqlUser" },
-            { "name": "SPRING_FLYWAY_PASSWORD", "secureValue": "$mysqlPassword" },
-            { "name": "JAVA_OPTS", "value": "-Xms256m -Xmx512m" }
-          ],
-          "resources": {
-            "requests": {
-              "cpu": 1.0,
-              "memoryInGB": 1.5
-            }
-          }
-        }
-      },
-      {
-        "name": "$mysqlContainerName",
-        "properties": {
-          "image": "$mysqlImageFull",
-          "ports": [ { "port": 3306 } ],
-          "environmentVariables": [
-            { "name": "MYSQL_DATABASE", "value": "$mysqlDatabase" },
-            { "name": "MYSQL_USER", "value": "$mysqlUser" },
-            { "name": "MYSQL_PASSWORD", "secureValue": "$mysqlPassword" },
-            { "name": "MYSQL_ROOT_PASSWORD", "secureValue": "$mysqlRootPassword" }
-          ],
-          "resources": {
-            "requests": {
-              "cpu": 1.0,
-              "memoryInGB": 1.5
-            }
-          }
-        }
-      }
-    ],
-    "osType": "Linux",
-    "restartPolicy": "Always",
-    "imageRegistryCredentials": [
-      {
-        "server": "$loginServer",
-        "username": "$acrUsername",
-        "password": "$acrPassword"
-      }
-    ],
-    "ipAddress": {
-      "type": "Public",
-      "dnsNameLabel": "$dnsLabel",
-      "ports": [ { "protocol": "TCP", "port": 8080 } ]
-    }
-  }
-}
-"@
 
+                      $appContainer = @{ 
+                        name = $appContainerName
+                        properties = @{ 
+                          image = $appImageFull
+                          ports = @(@{ port = 8080 })
+                          environmentVariables = @(
+                            @{ name = 'SERVER_PORT'; value = '8080' },
+                            @{ name = 'DB_HOST'; value = $mysqlContainerName },
+                            @{ name = 'DB_PORT'; value = '3306' },
+                            @{ name = 'SPRING_DATASOURCE_URL'; value = $springDatasourceUrl },
+                            @{ name = 'SPRING_DATASOURCE_USERNAME'; value = $mysqlUser },
+                            @{ name = 'SPRING_DATASOURCE_PASSWORD'; secureValue = $mysqlPassword },
+                            @{ name = 'SPRING_FLYWAY_URL'; value = $springDatasourceUrl },
+                            @{ name = 'SPRING_FLYWAY_USER'; value = $mysqlUser },
+                            @{ name = 'SPRING_FLYWAY_PASSWORD'; secureValue = $mysqlPassword },
+                            @{ name = 'JAVA_OPTS'; value = '-Xms256m -Xmx512m' }
+                          )
+                          resources = @{ requests = @{ cpu = 1.0; memoryInGB = 1.5 } }
+                        }
+                      }
+
+                      $mysqlContainer = @{ 
+                        name = $mysqlContainerName
+                        properties = @{ 
+                          image = $mysqlImageFull
+                          ports = @(@{ port = 3306 })
+                          environmentVariables = @(
+                            @{ name = 'MYSQL_DATABASE'; value = $mysqlDatabase },
+                            @{ name = 'MYSQL_USER'; value = $mysqlUser },
+                            @{ name = 'MYSQL_PASSWORD'; secureValue = $mysqlPassword },
+                            @{ name = 'MYSQL_ROOT_PASSWORD'; secureValue = $mysqlRootPassword }
+                          )
+                          resources = @{ requests = @{ cpu = 1.0; memoryInGB = 1.5 } }
+                        }
+                      }
+
+                      $templateObject = @{ 
+                        name = $containerGroup
+                        location = $location
+                        properties = @{ 
+                          containers = @($appContainer, $mysqlContainer)
+                          osType = 'Linux'
+                          restartPolicy = 'Always'
+                          imageRegistryCredentials = @(
+                            @{ server = $loginServer; username = $acrUsername; password = $acrPassword }
+                          )
+                          ipAddress = @{ 
+                            type = 'Public'
+                            dnsNameLabel = $dnsLabel
+                            ports = @(@{ protocol = 'TCP'; port = 8080 })
+                          }
+                        }
+                      }
+
+                      $templateJson = $templateObject | ConvertTo-Json -Depth 6
                       $tempFile = New-TemporaryFile
-                      $template | Out-File -FilePath $tempFile -Encoding utf8
+                      $templateJson | Out-File -FilePath $tempFile -Encoding utf8
                       try {
                         az container create --resource-group $resourceGroup --file $tempFile | Out-Null
                       }
