@@ -21,7 +21,7 @@ Acesse: `http://localhost:8080` (admin/admin123)
 chmod +x setup-azure-resources.sh
 ./setup-azure-resources.sh
 ```
-O script builda as imagens, publica no Azure Container Registry e cria um Container Group com a aplicação + banco MySQL.
+O script apenas prepara o Resource Group e o Azure Container Registry. O deploy completo (build da imagem + criação/atualização do container group) é realizado pelo pipeline `azure-pipelines.yml`.
 
 ## 📋 Funcionalidades
 

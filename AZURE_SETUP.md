@@ -12,14 +12,25 @@
 
 Nome: `mottu-variables`
 
-| Variável | Valor |
-|----------|-------|
-| `azureSubscription` | `nome-service-connection` |
-| `containerGroupName` | `qualitracker-aci` |
-| `acrName` | `qualitrackeracr` |
-| `appImageName` | `qualitracker-app:latest` |
+| Variável | Tipo | Exemplo |
+|----------|------|---------|
+| `azureSubscription` | Normal | `nome-service-connection` |
+| `resourceGroup` | Normal | `qualitracker-mottu-rg` |
+| `location` | Normal | `brazilsouth` |
+| `containerGroupName` | Normal | `qualitracker-aci` |
+| `dnsLabel` | Normal | `qualitracker-dev` (precisa ser único na região) |
+| `acrName` | Normal | `qualitrackeracr` |
+| `appImageName` | Normal | `qualitracker-app` |
+| `mysqlImageName` | Normal | `qualitracker-mysql` |
+| `mysqlImageTag` | Normal | `8.0` |
+| `mysqlDatabase` | Normal | `qualitracker` |
+| `mysqlUser` | Secret | `qualitracker_user` |
+| `mysqlPassword` | Secret | `senha-app` |
+| `mysqlRootPassword` | Secret | `senha-root` |
+| `appContainerName` | (opcional) Normal | `qualitracker-app` |
+| `mysqlContainerName` | (opcional) Normal | `qualitracker-mysql` |
 
-**⚠️ Mantenha credenciais sensíveis como Secret**
+**⚠️ Marque as senhas como Secret.**
 
 ## 3. Service Connection
 
@@ -33,17 +44,15 @@ Nome: `mottu-variables`
 3. Escolher `azure-pipelines.yml`
 4. Salvar e executar
 
-## 5. Criar Recursos Azure
+## 5. Preparar Recursos Azure
 
-Execute o script:
+Execute o script (apenas uma vez ou quando precisar recriar a infraestrutura base):
 ```bash
 ./setup-azure-resources.sh
 ```
+Ele garante a existência do Resource Group e do Azure Container Registry (com a imagem base do MySQL).
 
-Recursos provisionados automaticamente:
-- Resource Group
-- Azure Container Registry (imagens da aplicação e do banco)
-- Azure Container Instances (container group com app + MySQL)
+O deploy completo (build da imagem da aplicação e criação/atualização do container group) é feito pelo pipeline.
 
 ## 6. Convidar Professor
 

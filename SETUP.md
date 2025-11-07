@@ -1,37 +1,49 @@
 # 🚀 Setup Azure - QualiTracker
 
-## Executar Script
+## Executar Script (Infra base)
 
 ```bash
 chmod +x setup-azure-resources.sh
 ./setup-azure-resources.sh
 ```
 
-O script:
-- Cria o Resource Group
-- Provisiona o Azure Container Registry
-- Builda e publica as imagens da aplicação e do MySQL
-- Cria um container group no Azure Container Instances com os dois contêineres
+O script garante:
+- Resource Group `qualitracker-mottu-rg`
+- Azure Container Registry `qualitrackeracr.azurecr.io`
+- Imagem base MySQL (`qualitracker-mysql:8.0`) armazenada no ACR
 
-## Recursos Criados
+## Variáveis necessárias no Azure DevOps
 
-- Resource Group: `qualitracker-mottu-rg`
-- Azure Container Registry: `qualitrackeracr.azurecr.io`
-- Container Group: `qualitracker-aci`
-- Contêineres: `qualitracker-app` (Spring Boot) + `qualitracker-mysql` (MySQL 8)
+Crie/atualize o Variable Group `mottu-variables` com:
 
-## Acesso
+- `azureSubscription` (nome da service connection)
+- `resourceGroup` (`qualitracker-mottu-rg`)
+- `location` (`brazilsouth`)
+- `containerGroupName` (`qualitracker-aci`)
+- `dnsLabel` (ex.: `qualitracker-dev`)
+- `acrName` (`qualitrackeracr`)
+- `appImageName` (`qualitracker-app`)
+- `mysqlImageName` (`qualitracker-mysql`)
+- `mysqlImageTag` (`8.0`)
+- `mysqlDatabase` (`qualitracker`)
+- `mysqlUser` *(Secret)*
+- `mysqlPassword` *(Secret)*
+- `mysqlRootPassword` *(Secret)*
+- (opcionais) `appContainerName`, `mysqlContainerName`
 
-- **Aplicação**: `http://qualitracker-XXXXX.brazilsouth.azurecontainer.io:8080`
-  - O sufixo `XXXXX` (DNS) é exibido ao final do script
-- **Banco de dados**: Apenas acessível dentro do container group
-  - Use `az container exec --container qualitracker-mysql` para abrir o cliente MySQL
+## Deploy
 
-## Credenciais Geradas
+O pipeline `azure-pipelines.yml`:
+1. Builda e publica a imagem da aplicação no ACR (tags `BuildId` e `latest`).
+2. Cria/atualiza o container group no Azure Container Instances com dois contêineres (app + MySQL) usando as variáveis acima.
 
-- Usuário do banco: `qualitracker_user`
-- Senha do banco: exibida no resumo do script
-- Senha root MySQL: exibida no resumo do script
+Após o deploy, a aplicação ficará disponível em:
+```
+http://<dnsLabel>.brazilsouth.azurecontainer.io:8080
+```
 
-⚠️ Salve as senhas imediatamente — elas não ficam armazenadas em lugar algum após o término do script.
+Para consultar logs:
+```bash
+az container logs --resource-group <resourceGroup> --name <containerGroupName> --container <appContainerName>
+```
 

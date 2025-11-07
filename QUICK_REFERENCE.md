@@ -5,8 +5,8 @@
 - [ ] Projeto Azure DevOps criado
 - [ ] Variable Group configurado (contêineres)
 - [ ] Service Connections criadas
+- [ ] Recursos Azure preparados (`setup-azure-resources.sh`)
 - [ ] Pipeline executado com sucesso
-- [ ] Recursos Azure criados (`setup-azure-resources.sh`)
 
 ## Variáveis Azure DevOps
 
@@ -15,14 +15,25 @@
 | Variável | Tipo |
 |----------|------|
 | `azureSubscription` | Normal |
+| `resourceGroup` | Normal |
+| `location` | Normal |
 | `containerGroupName` | Normal |
+| `dnsLabel` | Normal |
 | `acrName` | Normal |
 | `appImageName` | Normal |
+| `mysqlImageName` | Normal |
+| `mysqlImageTag` | Normal |
+| `mysqlDatabase` | Normal |
+| `mysqlUser` | Secret |
+| `mysqlPassword` | Secret |
+| `mysqlRootPassword` | Secret |
+| `appContainerName` | (opcional) Normal |
+| `mysqlContainerName` | (opcional) Normal |
 
 ## Troubleshooting
 
-**Pipeline falha**: Verificar permissions do Service Connection e se o ACR já existe
+**Pipeline falha no push**: Verifique se o ACR `qualitrackeracr` foi criado (execute novamente o script e aguarde propagação DNS).
 
-**Container não sobe**: Ver logs com `az container logs --resource-group <rg> --name <container-group>`
+**Container não sobe**: Consulte os logs com `az container logs --resource-group <rg> --name <container-group> --container <appContainerName>`.
 
-**App não encontra o banco**: Confirme se ambos contêineres estão rodando no mesmo container group e revise as senhas expostas no final do script
+**App não encontra o banco**: Confirme as variáveis `mysqlUser/mysqlPassword/mysqlDatabase` e se os contêineres usam o mesmo container group.
