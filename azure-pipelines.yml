@@ -173,7 +173,8 @@ stages:
                             @{ name = 'MYSQL_DATABASE'; value = $mysqlDatabase },
                             @{ name = 'MYSQL_USER'; value = $mysqlUser },
                             @{ name = 'MYSQL_PASSWORD'; secureValue = $mysqlPassword },
-                            @{ name = 'MYSQL_ROOT_PASSWORD'; secureValue = $mysqlRootPassword }
+                            @{ name = 'MYSQL_ROOT_PASSWORD'; secureValue = $mysqlRootPassword },
+                            @{ name = 'MYSQL_ROOT_HOST'; value = '%' }
                           )
                           resources = @{ requests = @{ cpu = 1.0; memoryInGB = 1.5 } }
                         }
