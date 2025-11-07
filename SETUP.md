@@ -16,7 +16,7 @@ O script:
 ## Recursos Criados
 
 - Resource Group: `qualitracker-mottu-rg`
-- Azure Container Registry: `qualitrackeracrXXXXX.azurecr.io`
+- Azure Container Registry: `qualitrackeracr.azurecr.io`
 - Container Group: `qualitracker-aci`
 - Contêineres: `qualitracker-app` (Spring Boot) + `qualitracker-mysql` (MySQL 8)
 

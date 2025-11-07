@@ -23,7 +23,7 @@ LOCATION="brazilsouth"  # Ajuste se desejar outra região suportada por ACI
 
 # Configurações de nomes e imagens
 UNIQUE_SUFFIX=$(openssl rand -hex 3 | tr '[:upper:]' '[:lower:]')
-ACR_NAME="${PROJECT_NAME}acr${UNIQUE_SUFFIX}"
+ACR_NAME="${PROJECT_NAME}acr"
 REGISTRY_LOGIN_SERVER="${ACR_NAME}.azurecr.io"
 APP_IMAGE_REPO="${PROJECT_NAME}-app"
 APP_IMAGE_TAG="latest"

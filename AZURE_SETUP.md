@@ -16,7 +16,7 @@ Nome: `mottu-variables`
 |----------|-------|
 | `azureSubscription` | `nome-service-connection` |
 | `containerGroupName` | `qualitracker-aci` |
-| `acrName` | `qualitrackeracrXXXXX` (igual ao criado pelo script) |
+| `acrName` | `qualitrackeracr` |
 | `appImageName` | `qualitracker-app:latest` |
 
 **⚠️ Mantenha credenciais sensíveis como Secret**
