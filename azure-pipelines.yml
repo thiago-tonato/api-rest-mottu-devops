@@ -112,13 +112,13 @@ stages:
 
                       $loginServer = az acr show --name $acrName --query loginServer -o tsv
                       $imageTag = '$(Build.BuildId)'
-                      $appImageFull = "$loginServer/$appImageRepo:$imageTag"
-                      $mysqlImageFull = "$loginServer/$mysqlImageRepo:$mysqlImageTag"
+                      $appImageFull = "$loginServer/${appImageRepo}:$imageTag"
+                      $mysqlImageFull = "$loginServer/${mysqlImageRepo}:$mysqlImageTag"
 
-                      Write-Host "Garantindo imagem MySQL ${mysqlImageRepo}:${mysqlImageTag} no ACR..."
+                      Write-Host "Garantindo imagem MySQL ${mysqlImageRepo}`:${mysqlImageTag} no ACR..."
                       $tagExists = az acr repository show-tags --name $acrName --repository $mysqlImageRepo --query "contains(@, '${mysqlImageTag}')" -o tsv 2>$null
                       if ($tagExists -ne 'true') {
-                        az acr import --name $acrName --source "docker.io/library/mysql:$mysqlImageTag" --image "$mysqlImageRepo:$mysqlImageTag"
+                        az acr import --name $acrName --source "docker.io/library/mysql:${mysqlImageTag}" --image "${mysqlImageRepo}:${mysqlImageTag}"
                       }
 
                       Write-Host 'Recuperando credenciais do ACR...'
