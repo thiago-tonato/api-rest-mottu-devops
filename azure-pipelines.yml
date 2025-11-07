@@ -141,7 +141,7 @@ stages:
                       }
 
                       Write-Host "Criando novo container group ${containerGroup}..."
-                      $springDatasourceUrl = "jdbc:mysql://${mysqlContainerName}:3306/${mysqlDatabase}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+                      $springDatasourceUrl = "jdbc:mysql://127.0.0.1:3306/${mysqlDatabase}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 
                       $appContainer = @{ 
                         name = $appContainerName
@@ -150,7 +150,7 @@ stages:
                           ports = @(@{ port = 8080 })
                           environmentVariables = @(
                             @{ name = 'SERVER_PORT'; value = '8080' },
-                            @{ name = 'DB_HOST'; value = $mysqlContainerName },
+                            @{ name = 'DB_HOST'; value = '127.0.0.1' },
                             @{ name = 'DB_PORT'; value = '3306' },
                             @{ name = 'SPRING_DATASOURCE_URL'; value = $springDatasourceUrl },
                             @{ name = 'SPRING_DATASOURCE_USERNAME'; value = $mysqlUser },
