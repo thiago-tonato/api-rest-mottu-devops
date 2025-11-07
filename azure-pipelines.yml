@@ -101,33 +101,32 @@ stages:
                       APP_CONTAINER_NAME="$(appContainerName)"
                       MYSQL_CONTAINER_NAME="$(mysqlContainerName)"
 
-                      validate_var() {
+                      check_required() {
                         local value="$1"
-                        local placeholder="$2"
-                        local name="$3"
-                        if [[ -z "$value" || "$value" == "$placeholder" ]]; then
+                        local name="$2"
+                        if [[ -z "$value" ]]; then
                           echo "Variável $name não definida no pipeline." >&2
                           exit 1
                         fi
                       }
 
-                      validate_var "$RESOURCE_GROUP" "$(resourceGroup)" "resourceGroup"
-                      validate_var "$CONTAINER_GROUP" "$(containerGroupName)" "containerGroupName"
-                      validate_var "$ACR_NAME" "$(acrName)" "acrName"
-                      validate_var "$APP_IMAGE_REPO" "$(appImageName)" "appImageName"
-                      validate_var "$MYSQL_IMAGE_REPO" "$(mysqlImageName)" "mysqlImageName"
-                      validate_var "$MYSQL_IMAGE_TAG" "$(mysqlImageTag)" "mysqlImageTag"
-                      validate_var "$MYSQL_DATABASE" "$(mysqlDatabase)" "mysqlDatabase"
-                      validate_var "$MYSQL_USER" "$(mysqlUser)" "mysqlUser"
-                      validate_var "$MYSQL_PASSWORD" "$(mysqlPassword)" "mysqlPassword"
-                      validate_var "$MYSQL_ROOT_PASSWORD" "$(mysqlRootPassword)" "mysqlRootPassword"
-                      validate_var "$LOCATION" "$(location)" "location"
-                      validate_var "$DNS_LABEL" "$(dnsLabel)" "dnsLabel"
+                      check_required "$RESOURCE_GROUP" "resourceGroup"
+                      check_required "$CONTAINER_GROUP" "containerGroupName"
+                      check_required "$ACR_NAME" "acrName"
+                      check_required "$APP_IMAGE_REPO" "appImageName"
+                      check_required "$MYSQL_IMAGE_REPO" "mysqlImageName"
+                      check_required "$MYSQL_IMAGE_TAG" "mysqlImageTag"
+                      check_required "$MYSQL_DATABASE" "mysqlDatabase"
+                      check_required "$MYSQL_USER" "mysqlUser"
+                      check_required "$MYSQL_PASSWORD" "mysqlPassword"
+                      check_required "$MYSQL_ROOT_PASSWORD" "mysqlRootPassword"
+                      check_required "$LOCATION" "location"
+                      check_required "$DNS_LABEL" "dnsLabel"
 
-                      if [[ -z "$APP_CONTAINER_NAME" || "$APP_CONTAINER_NAME" == '$(appContainerName)' ]]; then
+                      if [[ -z "$APP_CONTAINER_NAME" ]]; then
                         APP_CONTAINER_NAME="qualitracker-app"
                       fi
-                      if [[ -z "$MYSQL_CONTAINER_NAME" || "$MYSQL_CONTAINER_NAME" == '$(mysqlContainerName)' ]]; then
+                      if [[ -z "$MYSQL_CONTAINER_NAME" ]]; then
                         MYSQL_CONTAINER_NAME="qualitracker-mysql"
                       fi
 
