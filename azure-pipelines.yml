@@ -164,73 +164,73 @@ stages:
                       SPRING_DATASOURCE_URL="jdbc:mysql://${MYSQL_CONTAINER_NAME}:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 
                       cat > "$TEMPLATE_FILE" <<EOF
-{
-  "name": "${CONTAINER_GROUP}",
-  "location": "${LOCATION}",
-  "properties": {
-    "containers": [
-      {
-        "name": "${APP_CONTAINER_NAME}",
-        "properties": {
-          "image": "${APP_IMAGE_FULL}",
-          "ports": [ { "port": 8080 } ],
-          "environmentVariables": [
-            { "name": "SERVER_PORT", "value": "8080" },
-            { "name": "DB_HOST", "value": "${MYSQL_CONTAINER_NAME}" },
-            { "name": "DB_PORT", "value": "3306" },
-            { "name": "SPRING_DATASOURCE_URL", "value": "${SPRING_DATASOURCE_URL}" },
-            { "name": "SPRING_DATASOURCE_USERNAME", "value": "${MYSQL_USER}" },
-            { "name": "SPRING_DATASOURCE_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
-            { "name": "SPRING_FLYWAY_URL", "value": "${SPRING_DATASOURCE_URL}" },
-            { "name": "SPRING_FLYWAY_USER", "value": "${MYSQL_USER}" },
-            { "name": "SPRING_FLYWAY_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
-            { "name": "JAVA_OPTS", "value": "-Xms256m -Xmx512m" }
-          ],
-          "resources": {
-            "requests": {
-              "cpu": 1.0,
-              "memoryInGB": 1.5
-            }
-          }
-        }
-      },
-      {
-        "name": "${MYSQL_CONTAINER_NAME}",
-        "properties": {
-          "image": "${MYSQL_IMAGE_FULL}",
-          "ports": [ { "port": 3306 } ],
-          "environmentVariables": [
-            { "name": "MYSQL_DATABASE", "value": "${MYSQL_DATABASE}" },
-            { "name": "MYSQL_USER", "value": "${MYSQL_USER}" },
-            { "name": "MYSQL_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
-            { "name": "MYSQL_ROOT_PASSWORD", "secureValue": "${MYSQL_ROOT_PASSWORD}" }
-          ],
-          "resources": {
-            "requests": {
-              "cpu": 1.0,
-              "memoryInGB": 1.5
-            }
-          }
-        }
-      }
-    ],
-    "osType": "Linux",
-    "restartPolicy": "Always",
-    "imageRegistryCredentials": [
-      {
-        "server": "${LOGIN_SERVER}",
-        "username": "${ACR_USERNAME}",
-        "password": "${ACR_PASSWORD}"
-      }
-    ],
-    "ipAddress": {
-      "type": "Public",
-      "dnsNameLabel": "${DNS_LABEL}",
-      "ports": [ { "protocol": "TCP", "port": 8080 } ]
-    }
-  }
-}
-EOF
+                      {
+                        "name": "${CONTAINER_GROUP}",
+                        "location": "${LOCATION}",
+                        "properties": {
+                          "containers": [
+                            {
+                              "name": "${APP_CONTAINER_NAME}",
+                              "properties": {
+                                "image": "${APP_IMAGE_FULL}",
+                                "ports": [ { "port": 8080 } ],
+                                "environmentVariables": [
+                                  { "name": "SERVER_PORT", "value": "8080" },
+                                  { "name": "DB_HOST", "value": "${MYSQL_CONTAINER_NAME}" },
+                                  { "name": "DB_PORT", "value": "3306" },
+                                  { "name": "SPRING_DATASOURCE_URL", "value": "${SPRING_DATASOURCE_URL}" },
+                                  { "name": "SPRING_DATASOURCE_USERNAME", "value": "${MYSQL_USER}" },
+                                  { "name": "SPRING_DATASOURCE_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
+                                  { "name": "SPRING_FLYWAY_URL", "value": "${SPRING_DATASOURCE_URL}" },
+                                  { "name": "SPRING_FLYWAY_USER", "value": "${MYSQL_USER}" },
+                                  { "name": "SPRING_FLYWAY_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
+                                  { "name": "JAVA_OPTS", "value": "-Xms256m -Xmx512m" }
+                                ],
+                                "resources": {
+                                  "requests": {
+                                    "cpu": 1.0,
+                                    "memoryInGB": 1.5
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "name": "${MYSQL_CONTAINER_NAME}",
+                              "properties": {
+                                "image": "${MYSQL_IMAGE_FULL}",
+                                "ports": [ { "port": 3306 } ],
+                                "environmentVariables": [
+                                  { "name": "MYSQL_DATABASE", "value": "${MYSQL_DATABASE}" },
+                                  { "name": "MYSQL_USER", "value": "${MYSQL_USER}" },
+                                  { "name": "MYSQL_PASSWORD", "secureValue": "${MYSQL_PASSWORD}" },
+                                  { "name": "MYSQL_ROOT_PASSWORD", "secureValue": "${MYSQL_ROOT_PASSWORD}" }
+                                ],
+                                "resources": {
+                                  "requests": {
+                                    "cpu": 1.0,
+                                    "memoryInGB": 1.5
+                                  }
+                                }
+                              }
+                            }
+                          ],
+                          "osType": "Linux",
+                          "restartPolicy": "Always",
+                          "imageRegistryCredentials": [
+                            {
+                              "server": "${LOGIN_SERVER}",
+                              "username": "${ACR_USERNAME}",
+                              "password": "${ACR_PASSWORD}"
+                            }
+                          ],
+                          "ipAddress": {
+                            "type": "Public",
+                            "dnsNameLabel": "${DNS_LABEL}",
+                            "ports": [ { "protocol": "TCP", "port": 8080 } ]
+                          }
+                        }
+                      }
+                      EOF
 
                       az container create \
                         --resource-group "$RESOURCE_GROUP" \
