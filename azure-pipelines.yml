@@ -105,11 +105,11 @@ stages:
                       $location = Require '$(location)' 'location'
                       $dnsLabel = Require '$(dnsLabel)' 'dnsLabel'
 
-                      $appContainerName = "$(appContainerName)"
+                      $appContainerName = '$(appContainerName)'
                       if ([string]::IsNullOrWhiteSpace($appContainerName) -or $appContainerName -eq '$(appContainerName)') {
                         $appContainerName = 'qualitracker-app'
                       }
-                      $mysqlContainerName = "$(mysqlContainerName)"
+                      $mysqlContainerName = '$(mysqlContainerName)'
                       if ([string]::IsNullOrWhiteSpace($mysqlContainerName) -or $mysqlContainerName -eq '$(mysqlContainerName)') {
                         $mysqlContainerName = 'qualitracker-mysql'
                       }
