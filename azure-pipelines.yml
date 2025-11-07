@@ -105,10 +105,14 @@ stages:
                       $location = Require '$(location)' 'location'
                       $dnsLabel = Require '$(dnsLabel)' 'dnsLabel'
 
-                      $appContainerName = '$(appContainerName)'
-                      if ([string]::IsNullOrWhiteSpace($appContainerName)) { $appContainerName = 'qualitracker-app' }
-                      $mysqlContainerName = '$(mysqlContainerName)'
-                      if ([string]::IsNullOrWhiteSpace($mysqlContainerName)) { $mysqlContainerName = 'qualitracker-mysql' }
+                      $appContainerName = "$(appContainerName)"
+                      if ([string]::IsNullOrWhiteSpace($appContainerName) -or $appContainerName -eq '$(appContainerName)') {
+                        $appContainerName = 'qualitracker-app'
+                      }
+                      $mysqlContainerName = "$(mysqlContainerName)"
+                      if ([string]::IsNullOrWhiteSpace($mysqlContainerName) -or $mysqlContainerName -eq '$(mysqlContainerName)') {
+                        $mysqlContainerName = 'qualitracker-mysql'
+                      }
 
                       $loginServer = az acr show --name $acrName --query loginServer -o tsv
                       $imageTag = '$(Build.BuildId)'
