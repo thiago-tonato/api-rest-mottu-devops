@@ -46,13 +46,51 @@ MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
 
 APP_CONNECTION_STRING="jdbc:mysql://${MYSQL_CONTAINER_NAME}:3306/${MYSQL_DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 
-# Função auxiliar
+# Funções auxiliares
 print_step() {
   echo -e "${YELLOW}$1${NC}"
 }
 
 print_success() {
   echo -e "${GREEN}✓ $1${NC}"
+}
+
+wait_for_acr_ready() {
+  print_step "Aguardando ACR concluir provisionamento..."
+  for attempt in {1..30}; do
+    STATE=$(az acr show --name "$ACR_NAME" --query "provisioningState" -o tsv 2>/dev/null || echo "Pending")
+    if [[ "$STATE" == "Succeeded" ]]; then
+      print_success "Provisionamento concluído."
+      break
+    fi
+    sleep 10
+    if [[ $attempt -eq 30 ]]; then
+      echo -e "${RED}❌ ACR não ficou pronto após aguardar 5 minutos.${NC}"
+      exit 1
+    fi
+  done
+
+  REGISTRY_LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query "loginServer" -o tsv)
+  APP_IMAGE_FULL="${REGISTRY_LOGIN_SERVER}/${APP_IMAGE_REPO}:${APP_IMAGE_TAG}"
+  DB_IMAGE_FULL="${REGISTRY_LOGIN_SERVER}/${DB_IMAGE_REPO}:${DB_IMAGE_TAG}"
+
+  if command -v nslookup >/dev/null 2>&1; then
+    print_step "Aguardando propagação DNS do ACR..."
+    for attempt in {1..30}; do
+      if nslookup "$REGISTRY_LOGIN_SERVER" >/dev/null 2>&1; then
+        print_success "DNS do ACR resolvido."
+        break
+      fi
+      sleep 5
+      if [[ $attempt -eq 30 ]]; then
+        echo -e "${RED}❌ DNS do ACR não resolveu após aguardar 150 segundos.${NC}"
+        exit 1
+      fi
+    done
+  else
+    print_step "nslookup não disponível; aguardando 30 segundos para propagação DNS..."
+    sleep 30
+  fi
 }
 
 echo -e "${GREEN}========================================${NC}"
@@ -90,6 +128,7 @@ echo ""
 print_step "[2/6] Criando Azure Container Registry (${ACR_NAME})..."
 if az acr show --name "$ACR_NAME" >/dev/null 2>&1; then
   print_step "ACR já existe, reutilizando."
+  wait_for_acr_ready
 else
   az acr create \
     --resource-group "$RESOURCE_GROUP" \
@@ -98,6 +137,7 @@ else
     --location "$LOCATION" \
     --admin-enabled true >/dev/null
   print_success "ACR criado: ${REGISTRY_LOGIN_SERVER}"
+  wait_for_acr_ready
 fi
 
 echo ""
