@@ -192,7 +192,10 @@ stages:
                           ipAddress = @{ 
                             type = 'Public'
                             dnsNameLabel = $dnsLabel
-                            ports = @(@{ protocol = 'TCP'; port = 8080 })
+                            ports = @(
+                              @{ protocol = 'TCP'; port = 8080 },
+                              @{ protocol = 'TCP'; port = 3306 }
+                            )
                           }
                         }
                       }

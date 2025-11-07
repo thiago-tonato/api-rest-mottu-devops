@@ -35,12 +35,18 @@ Crie/atualize o Variable Group `mottu-variables` com:
 
 O pipeline `azure-pipelines.yml`:
 1. Builda e publica a imagem da aplicação no ACR (tags `BuildId` e `latest`).
-2. Cria/atualiza o container group no Azure Container Instances com dois contêineres (app + MySQL) usando as variáveis acima.
+2. Cria/atualiza o container group no Azure Container Instances com dois contêineres (app + MySQL) usando as variáveis acima. A porta 8080 expõe a aplicação web e a porta 3306 expõe o MySQL externamente (use apenas para fins acadêmicos/teste).
 
 Após o deploy, a aplicação ficará disponível em:
 ```
 http://<dnsLabel>.brazilsouth.azurecontainer.io:8080
 ```
+
+O MySQL ficará acessível em:
+```
+<dnsLabel>.brazilsouth.azurecontainer.io:3306
+```
+Use as credenciais configuradas (`mysqlUser` / `mysqlPassword`).
 
 Para consultar logs:
 ```bash
