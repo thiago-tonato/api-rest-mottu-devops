@@ -3,7 +3,7 @@
 ## Checklist
 
 - [ ] Projeto Azure DevOps criado
-- [ ] Variable Group configurado
+- [ ] Variable Group configurado (contêineres)
 - [ ] Service Connections criadas
 - [ ] Pipeline executado com sucesso
 - [ ] Recursos Azure criados (`setup-azure-resources.sh`)
@@ -14,19 +14,15 @@
 
 | Variável | Tipo |
 |----------|------|
-| `DATASOURCE_URL` | Secret |
-| `DATASOURCE_USERNAME` | Secret |
-| `DATASOURCE_PASSWORD` | Secret |
-| `FLYWAY_URL` | Secret |
-| `FLYWAY_USER` | Secret |
-| `FLYWAY_PASSWORD` | Secret |
 | `azureSubscription` | Normal |
-| `webAppName` | Normal |
+| `containerGroupName` | Normal |
+| `acrName` | Normal |
+| `appImageName` | Normal |
 
 ## Troubleshooting
 
-**Pipeline falha**: Verificar logs, service connections, variáveis
+**Pipeline falha**: Verificar permissions do Service Connection e se o ACR já existe
 
-**App não conecta ao banco**: Verificar variáveis de ambiente no Web App, firewall MySQL
+**Container não sobe**: Ver logs com `az container logs --resource-group <rg> --name <container-group>`
 
-**MySQL não conecta**: Verificar firewall, SSL requerido, credenciais
+**App não encontra o banco**: Confirme se ambos contêineres estão rodando no mesmo container group e revise as senhas expostas no final do script

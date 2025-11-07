@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Script para criar recursos Azure - QualiTracker Mottu
-# Este script cria: Resource Group, MySQL, ACR, App Service Plan e Web App
+# Script para criar recursos Azure usando contêineres no Azure Container Instances
+# Cria: Resource Group, Azure Container Registry, imagens da aplicação e do MySQL
+# e um Container Group com dois contêineres (app + banco de dados)
 
-set -e
+set -euo pipefail
 
 # Cores para output
 RED='\033[0;31m'
@@ -11,349 +12,243 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Configurações
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Configurações básicas
 PROJECT_NAME="qualitracker"
 COMPANY_NAME="mottu"
 RESOURCE_GROUP="${PROJECT_NAME}-${COMPANY_NAME}-rg"
-# Tenta usar região brasileira primeiro, depois fallback
-LOCATION="brazilsouth"  # Região brasileira (São Paulo)
-# Alternativas se não disponível: eastus, westus2, westeurope
+LOCATION="brazilsouth"  # Ajuste se desejar outra região suportada por ACI
 
-# MySQL
-MYSQL_SERVER_NAME="${PROJECT_NAME}-mysql-server"
+# Configurações de nomes e imagens
+UNIQUE_SUFFIX=$(openssl rand -hex 3 | tr '[:upper:]' '[:lower:]')
+ACR_NAME="${PROJECT_NAME}acr${UNIQUE_SUFFIX}"
+REGISTRY_LOGIN_SERVER="${ACR_NAME}.azurecr.io"
+APP_IMAGE_REPO="${PROJECT_NAME}-app"
+APP_IMAGE_TAG="latest"
+DB_IMAGE_REPO="${PROJECT_NAME}-mysql"
+DB_IMAGE_TAG="8.0"
+APP_IMAGE_FULL="${REGISTRY_LOGIN_SERVER}/${APP_IMAGE_REPO}:${APP_IMAGE_TAG}"
+DB_IMAGE_FULL="${REGISTRY_LOGIN_SERVER}/${DB_IMAGE_REPO}:${DB_IMAGE_TAG}"
+
+# Container Group
+CONTAINER_GROUP_NAME="${PROJECT_NAME}-aci"
+APP_CONTAINER_NAME="${PROJECT_NAME}-app"
+MYSQL_CONTAINER_NAME="${PROJECT_NAME}-mysql"
+DNS_LABEL="${PROJECT_NAME}-${UNIQUE_SUFFIX}"
+
+# Banco de dados
 MYSQL_DB_NAME="qualitracker"
-MYSQL_ADMIN_USER="mottuadmin"
-MYSQL_ADMIN_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)  # Gera senha aleatória
-MYSQL_APP_USER="qualitracker_user"  # Usuário da aplicação
-MYSQL_APP_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)  # Gera senha aleatória
+MYSQL_APP_USER="qualitracker_user"
+MYSQL_APP_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
 
-# Não precisa de Container Registry - deploy direto do JAR
+APP_CONNECTION_STRING="jdbc:mysql://127.0.0.1:3306/${MYSQL_DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 
-# App Service
-APP_SERVICE_PLAN_NAME="${PROJECT_NAME}-asp"
-WEB_APP_NAME="${PROJECT_NAME}-app"  # Deve ser único globalmente
-
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}QualiTracker Mottu - Azure Setup${NC}"
-echo -e "${GREEN}========================================${NC}"
-echo ""
-
-# Verificar se Azure CLI está instalado
-if ! command -v az &> /dev/null; then
-    echo -e "${RED}Azure CLI não está instalado. Por favor, instale: https://docs.microsoft.com/cli/azure/install-azure-cli${NC}"
-    exit 1
-fi
-
-# Verificar se está logado
-echo -e "${YELLOW}Verificando login no Azure...${NC}"
-if ! az account show &> /dev/null; then
-    echo -e "${YELLOW}Fazendo login no Azure...${NC}"
-    az login
-fi
-
-# Obter subscription atual
-SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-echo -e "${GREEN}Usando subscription: ${SUBSCRIPTION_ID}${NC}"
-echo ""
-
-# ============================================
-# 1. Criar Resource Group
-# ============================================
-echo -e "${YELLOW}[1/7] Criando Resource Group...${NC}"
-if az group show --name $RESOURCE_GROUP &> /dev/null; then
-    echo -e "${YELLOW}Resource Group já existe.${NC}"
-else
-    az group create \
-        --name $RESOURCE_GROUP \
-        --location $LOCATION
-    echo -e "${GREEN}✓ Resource Group criado: ${RESOURCE_GROUP}${NC}"
-fi
-echo ""
-
-# ============================================
-# 2. Criar Azure Database for MySQL
-# ============================================
-echo -e "${YELLOW}[2/6] Criando Azure Database for MySQL...${NC}"
-if az mysql flexible-server show --resource-group $RESOURCE_GROUP --name $MYSQL_SERVER_NAME &> /dev/null; then
-    echo -e "${YELLOW}MySQL Server já existe.${NC}"
-else
-    # Lista de regiões e SKUs para tentar
-    REGIONS=("eastus" "westus2" "westeurope" "brazilsouth" "southcentralus")
-    SKUS=("Standard_B1s" "Standard_B1ms" "Standard_B2s")
-    
-    MYSQL_CREATED=false
-    
-    for REGION in "${REGIONS[@]}"; do
-        echo -e "${YELLOW}Tentando região: ${REGION}${NC}"
-        
-        for SKU in "${SKUS[@]}"; do
-            echo -e "${YELLOW}  Tentando SKU: ${SKU}${NC}"
-            
-            if az mysql flexible-server create \
-                --resource-group $RESOURCE_GROUP \
-                --name $MYSQL_SERVER_NAME \
-                --location $REGION \
-                --admin-user $MYSQL_ADMIN_USER \
-                --admin-password $MYSQL_ADMIN_PASSWORD \
-                --sku-name $SKU \
-                --tier Burstable \
-                --public-access 0.0.0.0 \
-                --storage-size 20 \
-                --version 8.0.21 \
-                --high-availability Disabled \
-                --storage-auto-grow Enabled \
-                --output none 2>/dev/null; then
-                
-                LOCATION=$REGION
-                MYSQL_CREATED=true
-                echo -e "${GREEN}✓ MySQL Server criado: ${MYSQL_SERVER_NAME} (região: ${REGION}, SKU: ${SKU})${NC}"
-                break 2
-            fi
-        done
-    done
-    
-    if [ "$MYSQL_CREATED" = false ]; then
-        echo -e "${RED}❌ Erro: Não foi possível criar MySQL em nenhuma região/SKU testada.${NC}"
-        echo -e "${YELLOW}Possíveis causas:${NC}"
-        echo "  1. Subscription não permite criar MySQL Flexible Server"
-        echo "  2. Cota de recursos esgotada"
-        echo "  3. Verifique no portal Azure se o serviço está disponível"
-        echo ""
-        echo -e "${YELLOW}Tente criar manualmente no portal Azure:${NC}"
-        echo "  https://portal.azure.com → Create a resource → Azure Database for MySQL"
-        exit 1
-    fi
-    
-    echo -e "${GREEN}  Admin User: ${MYSQL_ADMIN_USER}${NC}"
-    echo -e "${GREEN}  Admin Password: ${MYSQL_ADMIN_PASSWORD}${NC}"
-fi
-
-# Obter FQDN do servidor MySQL
-MYSQL_FQDN="${MYSQL_SERVER_NAME}.mysql.database.azure.com"
-echo ""
-
-# ============================================
-# 3. Configurar Firewall do MySQL
-# ============================================
-echo -e "${YELLOW}[3/6] Configurando firewall do MySQL...${NC}"
-
-# Permitir acesso do Azure Services
-az mysql flexible-server firewall-rule create \
-    --resource-group $RESOURCE_GROUP \
-    --name $MYSQL_SERVER_NAME \
-    --rule-name AllowAzureServices \
-    --start-ip-address 0.0.0.0 \
-    --end-ip-address 0.0.0.0 \
-    --output none 2>/dev/null || echo -e "${YELLOW}Regra de firewall já existe.${NC}"
-
-# Obter IP público atual
-MY_IP=$(curl -s ifconfig.me)
-echo -e "${YELLOW}Seu IP público: ${MY_IP}${NC}"
-
-# Permitir acesso do seu IP
-az mysql flexible-server firewall-rule create \
-    --resource-group $RESOURCE_GROUP \
-    --name $MYSQL_SERVER_NAME \
-    --rule-name AllowMyIP \
-    --start-ip-address $MY_IP \
-    --end-ip-address $MY_IP \
-    --output none 2>/dev/null || echo -e "${YELLOW}Regra de firewall para seu IP já existe.${NC}"
-
-echo -e "${GREEN}✓ Firewall configurado${NC}"
-echo ""
-
-# ============================================
-# 4. Criar Banco de Dados
-# ============================================
-echo -e "${YELLOW}[4/6] Criando banco de dados...${NC}"
-
-# Criar banco de dados usando MySQL CLI ou Azure CLI
-az mysql flexible-server db create \
-    --resource-group $RESOURCE_GROUP \
-    --server-name $MYSQL_SERVER_NAME \
-    --database-name $MYSQL_DB_NAME \
-    --output none 2>/dev/null || echo -e "${YELLOW}Banco de dados já existe.${NC}"
-
-echo -e "${GREEN}✓ Banco de dados criado: ${MYSQL_DB_NAME}${NC}"
-echo ""
-
-# ============================================
-# 5. Criar Usuário da Aplicação no MySQL
-# ============================================
-echo -e "${YELLOW}[5/6] Criando usuário da aplicação no MySQL...${NC}"
-
-# Criar script SQL temporário para criar usuário
-SQL_SCRIPT="/tmp/create_user_${RANDOM}.sql"
-cat > $SQL_SCRIPT << EOF
-CREATE USER IF NOT EXISTS '${MYSQL_APP_USER}'@'%' IDENTIFIED BY '${MYSQL_APP_PASSWORD}';
-GRANT ALL PRIVILEGES ON ${MYSQL_DB_NAME}.* TO '${MYSQL_APP_USER}'@'%';
-FLUSH PRIVILEGES;
-EOF
-
-# Executar script SQL
-echo -e "${YELLOW}Executando script SQL para criar usuário...${NC}"
-mysql -h $MYSQL_FQDN -u $MYSQL_ADMIN_USER -p$MYSQL_ADMIN_PASSWORD < $SQL_SCRIPT 2>/dev/null || {
-    echo -e "${YELLOW}MySQL CLI não encontrado. Criando usuário via Azure CLI...${NC}"
-    # Alternativa: usar az mysql flexible-server execute para executar comandos
-    echo -e "${YELLOW}Por favor, execute manualmente no MySQL Workbench:${NC}"
-    echo ""
-    echo "CREATE USER IF NOT EXISTS '${MYSQL_APP_USER}'@'%' IDENTIFIED BY '${MYSQL_APP_PASSWORD}';"
-    echo "GRANT ALL PRIVILEGES ON ${MYSQL_DB_NAME}.* TO '${MYSQL_APP_USER}'@'%';"
-    echo "FLUSH PRIVILEGES;"
-    echo ""
+# Função auxiliar
+print_step() {
+  echo -e "${YELLOW}$1${NC}"
 }
 
-rm -f $SQL_SCRIPT
-echo -e "${GREEN}✓ Usuário da aplicação criado: ${MYSQL_APP_USER}${NC}"
-echo -e "${GREEN}  Password: ${MYSQL_APP_PASSWORD}${NC}"
-echo ""
+print_success() {
+  echo -e "${GREEN}✓ $1${NC}"
+}
 
-# ============================================
-# 6. Criar App Service Plan e Web App
-# ============================================
-echo -e "${YELLOW}[6/6] Criando App Service Plan e Web App...${NC}"
-
-# Criar App Service Plan
-if az appservice plan show --resource-group $RESOURCE_GROUP --name $APP_SERVICE_PLAN_NAME &> /dev/null; then
-    echo -e "${YELLOW}App Service Plan já existe.${NC}"
-else
-    # Tentar Free tier primeiro (F1), depois B1
-    echo -e "${YELLOW}Tentando criar App Service Plan (Free tier)...${NC}"
-    
-    if az appservice plan create \
-        --resource-group $RESOURCE_GROUP \
-        --name $APP_SERVICE_PLAN_NAME \
-        --location $LOCATION \
-        --is-linux \
-        --sku FREE 2>/dev/null; then
-        
-        echo -e "${GREEN}✓ App Service Plan criado: ${APP_SERVICE_PLAN_NAME} (Free tier)${NC}"
-    else
-        echo -e "${YELLOW}Free tier não disponível. Tentando B1...${NC}"
-        
-        if az appservice plan create \
-            --resource-group $RESOURCE_GROUP \
-            --name $APP_SERVICE_PLAN_NAME \
-            --location $LOCATION \
-            --is-linux \
-            --sku B1 2>/dev/null; then
-            
-            echo -e "${GREEN}✓ App Service Plan criado: ${APP_SERVICE_PLAN_NAME} (B1)${NC}"
-        else
-            echo -e "${RED}❌ Erro: Não foi possível criar App Service Plan.${NC}"
-            echo -e "${YELLOW}Possíveis causas:${NC}"
-            echo "  1. Cota de recursos esgotada (Basic VMs)"
-            echo "  2. Subscription não permite criar App Service Plans pagos"
-            echo ""
-            echo -e "${YELLOW}Soluções:${NC}"
-            echo "  1. Solicite aumento de quota:"
-            echo "     https://portal.azure.com → Subscriptions → Usage + quotas"
-            echo "  2. Ou crie manualmente no portal Azure com Free tier (F1)"
-            echo "  3. Ou use Azure Container Instances (alternativa)"
-            echo ""
-            echo -e "${YELLOW}Tente criar manualmente:${NC}"
-            echo "  https://portal.azure.com → Create a resource → Web App"
-            echo "  Escolha: Free (F1) ou Basic (B1) se tiver quota"
-            exit 1
-        fi
-    fi
-fi
-
-# Criar Web App (Java)
-if az webapp show --resource-group $RESOURCE_GROUP --name $WEB_APP_NAME &> /dev/null; then
-    echo -e "${YELLOW}Web App já existe. Configurando runtime...${NC}"
-    # Atualizar runtime se já existe
-    az webapp config set \
-        --resource-group $RESOURCE_GROUP \
-        --name $WEB_APP_NAME \
-        --linux-fx-version "JAVA|17-java17" \
-        --output none 2>/dev/null || true
-else
-    # Criar Web App com runtime Linux Java
-    echo -e "${YELLOW}Criando Web App...${NC}"
-    az webapp create \
-        --resource-group $RESOURCE_GROUP \
-        --plan $APP_SERVICE_PLAN_NAME \
-        --name $WEB_APP_NAME \
-        --runtime "JAVA:17-java17"
-    
-    echo -e "${GREEN}✓ Web App criada: ${WEB_APP_NAME}${NC}"
-fi
-
-# Configurações Java adicionais
-echo -e "${YELLOW}Configurando Web App...${NC}"
-az webapp config appsettings set \
-    --resource-group $RESOURCE_GROUP \
-    --name $WEB_APP_NAME \
-    --settings \
-        WEBSITE_WEBDEPLOY_USE_SCM=true \
-        SCM_DO_BUILD_DURING_DEPLOYMENT=true \
-    --output none 2>/dev/null || true
-
-echo -e "${GREEN}✓ Web App configurada${NC}"
-
-# Habilitar HTTPS
-az webapp update \
-    --resource-group $RESOURCE_GROUP \
-    --name $WEB_APP_NAME \
-    --https-only true \
-    --output none
-
-# Configurar variáveis de ambiente
-echo -e "${YELLOW}Configurando variáveis de ambiente...${NC}"
-
-MYSQL_CONNECTION_STRING="jdbc:mysql://${MYSQL_FQDN}:3306/${MYSQL_DB_NAME}?useSSL=true&requireSSL=false&serverTimezone=UTC"
-
-az webapp config appsettings set \
-    --resource-group $RESOURCE_GROUP \
-    --name $WEB_APP_NAME \
-    --settings \
-        SPRING_DATASOURCE_URL="$MYSQL_CONNECTION_STRING" \
-        SPRING_DATASOURCE_USERNAME="${MYSQL_APP_USER}" \
-        SPRING_DATASOURCE_PASSWORD="${MYSQL_APP_PASSWORD}" \
-        SPRING_FLYWAY_URL="$MYSQL_CONNECTION_STRING" \
-        SPRING_FLYWAY_USER="${MYSQL_APP_USER}" \
-        SPRING_FLYWAY_PASSWORD="${MYSQL_APP_PASSWORD}" \
-        SERVER_PORT="8080" \
-        JAVA_OPTS="-Xmx512m -Xms256m" \
-    --output none
-
-echo -e "${GREEN}✓ Variáveis de ambiente configuradas${NC}"
-echo ""
-
-# ============================================
-# Resumo Final
-# ============================================
-echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}✓ Setup Concluído!${NC}"
+echo -e "${GREEN}QualiTracker Mottu - Azure Container Setup${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo -e "${YELLOW}Informações de Conexão:${NC}"
+
+# Verificar Azure CLI
+if ! command -v az >/dev/null 2>&1; then
+  echo -e "${RED}Azure CLI não está instalado. Instale em: https://learn.microsoft.com/cli/azure/install-azure-cli${NC}"
+  exit 1
+fi
+
+# Verificar login no Azure
+print_step "Verificando login no Azure..."
+if ! az account show >/dev/null 2>&1; then
+  az login
+fi
+
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+print_success "Usando subscription: ${SUBSCRIPTION_ID}"
+
+# 1. Resource Group
+print_step "[1/6] Criando Resource Group..."
+if az group show --name "$RESOURCE_GROUP" >/dev/null 2>&1; then
+  print_step "Resource Group já existe, reutilizando."
+else
+  az group create --name "$RESOURCE_GROUP" --location "$LOCATION" >/dev/null
+  print_success "Resource Group criado: ${RESOURCE_GROUP}"
+fi
+
 echo ""
-echo -e "${GREEN}MySQL Server:${NC}"
-echo "  Host: ${MYSQL_FQDN}"
-echo "  Port: 3306"
-echo "  Database: ${MYSQL_DB_NAME}"
+
+# 2. Azure Container Registry
+print_step "[2/6] Criando Azure Container Registry (${ACR_NAME})..."
+if az acr show --name "$ACR_NAME" >/dev/null 2>&1; then
+  print_step "ACR já existe, reutilizando."
+else
+  az acr create \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "$ACR_NAME" \
+    --sku Basic \
+    --location "$LOCATION" \
+    --admin-enabled true >/dev/null
+  print_success "ACR criado: ${REGISTRY_LOGIN_SERVER}"
+fi
+
 echo ""
-echo "  Admin User: ${MYSQL_ADMIN_USER}"
-echo "  Admin Password: ${MYSQL_ADMIN_PASSWORD}"
+
+# 3. Build da imagem da aplicação
+print_step "[3/6] Construindo imagem da aplicação e enviando para o ACR..."
+az acr build \
+  --registry "$ACR_NAME" \
+  --image "${APP_IMAGE_REPO}:${APP_IMAGE_TAG}" \
+  . >/dev/null
+print_success "Imagem da aplicação publicada: ${APP_IMAGE_FULL}"
+
 echo ""
-echo "  App User: ${MYSQL_APP_USER}"
-echo "  App Password: ${MYSQL_APP_PASSWORD}"
+
+# 4. Importar imagem do MySQL oficial para o ACR
+print_step "[4/6] Importando imagem MySQL (${DB_IMAGE_FULL}) para o ACR..."
+az acr import \
+  --name "$ACR_NAME" \
+  --source "docker.io/library/mysql:8.0" \
+  --image "${DB_IMAGE_REPO}:${DB_IMAGE_TAG}" \
+  --force >/dev/null
+print_success "Imagem do banco disponível no ACR"
+
 echo ""
-echo -e "${GREEN}Web App:${NC}"
-WEB_APP_URL="https://${WEB_APP_NAME}.azurewebsites.net"
-echo "  URL: ${WEB_APP_URL}"
+
+# 5. Recuperar credenciais do ACR
+print_step "[5/6] Coletando credenciais do ACR..."
+ACR_USERNAME=$(az acr credential show --name "$ACR_NAME" --query username -o tsv)
+ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query passwords[0].value -o tsv)
+print_success "Credenciais do ACR prontas."
+
 echo ""
-echo -e "${YELLOW}String de Conexão MySQL (para Workbench):${NC}"
-echo "  mysql://${MYSQL_APP_USER}:${MYSQL_APP_PASSWORD}@${MYSQL_FQDN}:3306/${MYSQL_DB_NAME}"
+
+# 6. Provisionar Container Group com app + MySQL
+print_step "[6/6] Provisionando Azure Container Instances..."
+ACI_TEMPLATE=$(mktemp 2>/dev/null || mktemp.exe 2>/dev/null || echo "${TMPDIR:-/tmp}/aci-${RANDOM}.json")
+trap 'rm -f "$ACI_TEMPLATE"' EXIT
+
+cat >"$ACI_TEMPLATE" <<EOF
+{
+  "name": "${CONTAINER_GROUP_NAME}",
+  "location": "${LOCATION}",
+  "properties": {
+    "containers": [
+      {
+        "name": "${APP_CONTAINER_NAME}",
+        "properties": {
+          "image": "${APP_IMAGE_FULL}",
+          "ports": [
+            {
+              "port": 8080
+            }
+          ],
+          "environmentVariables": [
+            { "name": "SERVER_PORT", "value": "8080" },
+            { "name": "DB_HOST", "value": "127.0.0.1" },
+            { "name": "DB_PORT", "value": "3306" },
+            { "name": "SPRING_DATASOURCE_URL", "value": "${APP_CONNECTION_STRING}" },
+            { "name": "SPRING_DATASOURCE_USERNAME", "value": "${MYSQL_APP_USER}" },
+            { "name": "SPRING_DATASOURCE_PASSWORD", "secureValue": "${MYSQL_APP_PASSWORD}" },
+            { "name": "SPRING_FLYWAY_URL", "value": "${APP_CONNECTION_STRING}" },
+            { "name": "SPRING_FLYWAY_USER", "value": "${MYSQL_APP_USER}" },
+            { "name": "SPRING_FLYWAY_PASSWORD", "secureValue": "${MYSQL_APP_PASSWORD}" },
+            { "name": "JAVA_OPTS", "value": "-Xms256m -Xmx512m" }
+          ],
+          "resources": {
+            "requests": {
+              "cpu": 1.0,
+              "memoryInGB": 1.5
+            }
+          }
+        }
+      },
+      {
+        "name": "${MYSQL_CONTAINER_NAME}",
+        "properties": {
+          "image": "${DB_IMAGE_FULL}",
+          "ports": [
+            {
+              "port": 3306
+            }
+          ],
+          "environmentVariables": [
+            { "name": "MYSQL_DATABASE", "value": "${MYSQL_DB_NAME}" },
+            { "name": "MYSQL_USER", "value": "${MYSQL_APP_USER}" },
+            { "name": "MYSQL_PASSWORD", "secureValue": "${MYSQL_APP_PASSWORD}" },
+            { "name": "MYSQL_ROOT_PASSWORD", "secureValue": "${MYSQL_ROOT_PASSWORD}" }
+          ],
+          "resources": {
+            "requests": {
+              "cpu": 1.0,
+              "memoryInGB": 1.5
+            }
+          }
+        }
+      }
+    ],
+    "osType": "Linux",
+    "restartPolicy": "Always",
+    "imageRegistryCredentials": [
+      {
+        "server": "${REGISTRY_LOGIN_SERVER}",
+        "username": "${ACR_USERNAME}",
+        "password": "${ACR_PASSWORD}"
+      }
+    ],
+    "ipAddress": {
+      "type": "Public",
+      "dnsNameLabel": "${DNS_LABEL}",
+      "ports": [
+        {
+          "protocol": "TCP",
+          "port": 8080
+        }
+      ]
+    }
+  }
+}
+EOF
+
+az container create \
+  --resource-group "$RESOURCE_GROUP" \
+  --name "$CONTAINER_GROUP_NAME" \
+  --file "$ACI_TEMPLATE" >/dev/null
+
+print_success "Container group criado: ${CONTAINER_GROUP_NAME}"
+
 echo ""
-echo -e "${YELLOW}Próximos Passos:${NC}"
-echo "  1. Execute o pipeline CI/CD no Azure DevOps"
-echo "  2. A aplicação estará disponível em: ${WEB_APP_URL}"
-echo "  3. Conecte ao MySQL usando as credenciais acima no MySQL Workbench"
+
+APP_URL="http://${DNS_LABEL}.${LOCATION}.azurecontainer.io:8080"
+
+# Resumo final
+print_success "Setup concluído!"
 echo ""
-echo -e "${RED}⚠️ IMPORTANTE: Salve estas credenciais em local seguro!${NC}"
+print_step "Informações importantes:"
+echo "  • Resource Group: ${RESOURCE_GROUP}"
+echo "  • Azure Container Registry: ${REGISTRY_LOGIN_SERVER}"
+echo "  • Imagem da aplicação: ${APP_IMAGE_FULL}"
+echo "  • Imagem do MySQL: ${DB_IMAGE_FULL}"
+echo "  • Container Group: ${CONTAINER_GROUP_NAME}"
+echo "  • URL da aplicação: ${APP_URL}"
 echo ""
+print_step "Credenciais geradas:"
+echo "  • Usuário banco: ${MYSQL_APP_USER}"
+echo "  • Senha banco: ${MYSQL_APP_PASSWORD}"
+echo "  • Senha root MySQL: ${MYSQL_ROOT_PASSWORD}"
+echo ""
+print_step "Comandos úteis:"
+echo "  az acr login --name ${ACR_NAME}"
+echo "  az container logs --resource-group ${RESOURCE_GROUP} --name ${CONTAINER_GROUP_NAME} --container ${APP_CONTAINER_NAME}"
+echo "  az container exec --resource-group ${RESOURCE_GROUP} --name ${CONTAINER_GROUP_NAME} --container ${MYSQL_CONTAINER_NAME} --exec-command \"mysql -u${MYSQL_APP_USER} -p${MYSQL_APP_PASSWORD} ${MYSQL_DB_NAME}\""
+echo ""
+echo -e "${RED}⚠️ Salve as senhas em local seguro. Elas não serão exibidas novamente.${NC}"
 

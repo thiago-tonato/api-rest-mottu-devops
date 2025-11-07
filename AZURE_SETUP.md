@@ -14,16 +14,12 @@ Nome: `mottu-variables`
 
 | Variável | Valor |
 |----------|-------|
-| `DATASOURCE_URL` | `jdbc:mysql://servidor.mysql.database.azure.com:3306/qualitracker` |
-| `DATASOURCE_USERNAME` | `qualitracker_user` |
-| `DATASOURCE_PASSWORD` | `[senha]` |
-| `FLYWAY_URL` | `jdbc:mysql://servidor.mysql.database.azure.com:3306/qualitracker` |
-| `FLYWAY_USER` | `qualitracker_user` |
-| `FLYWAY_PASSWORD` | `[senha]` |
 | `azureSubscription` | `nome-service-connection` |
-| `webAppName` | `qualitracker-app` |
+| `containerGroupName` | `qualitracker-aci` |
+| `acrName` | `qualitrackeracrXXXXX` (igual ao criado pelo script) |
+| `appImageName` | `qualitracker-app:latest` |
 
-**⚠️ Marcar senhas como Secret**
+**⚠️ Mantenha credenciais sensíveis como Secret**
 
 ## 3. Service Connection
 
@@ -44,9 +40,10 @@ Execute o script:
 ./setup-azure-resources.sh
 ```
 
-Ou manualmente:
-- Azure Database for MySQL Flexible Server
-- Azure Web App (Java 17)
+Recursos provisionados automaticamente:
+- Resource Group
+- Azure Container Registry (imagens da aplicação e do banco)
+- Azure Container Instances (container group com app + MySQL)
 
 ## 6. Convidar Professor
 

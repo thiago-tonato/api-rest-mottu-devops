@@ -6,7 +6,7 @@ Aplicação Spring Boot para rastreamento e gestão de motos com sensores UWB.
 
 - Java 17, Spring Boot 3.4.5
 - MySQL, Flyway
-- Azure DevOps CI/CD, Azure Web App
+- Docker, Azure Container Registry, Azure Container Instances, Azure DevOps CI/CD
 
 ## 🚀 Setup Rápido
 
@@ -16,11 +16,12 @@ Aplicação Spring Boot para rastreamento e gestão de motos com sensores UWB.
 ```
 Acesse: `http://localhost:8080` (admin/admin123)
 
-### Azure
+### Azure (contêineres)
 ```bash
 chmod +x setup-azure-resources.sh
 ./setup-azure-resources.sh
 ```
+O script builda as imagens, publica no Azure Container Registry e cria um Container Group com a aplicação + banco MySQL.
 
 ## 📋 Funcionalidades
 
