@@ -48,6 +48,17 @@ O MySQL ficará acessível em:
 ```
 Use as credenciais configuradas (`mysqlUser` / `mysqlPassword`).
 
+### Acesso ao MySQL via Workbench (pós-deploy)
+
+- Host: `<dnsLabel>.brazilsouth.azurecontainer.io`
+- Porta: `3306`
+- Usuário: valor da variável `mysqlUser`
+- Senha: valor da variável `mysqlPassword`
+- Banco: valor da variável `mysqlDatabase` (padrão `qualitracker`)
+- Observações:
+  - Garanta que o container group está em execução e expondo a porta `3306`.
+  - Use conexões apenas para fins acadêmicos/testes; considere túnel seguro/VPN para ambientes produtivos.
+
 Para consultar logs:
 ```bash
 az container logs --resource-group <resourceGroup> --name <containerGroupName> --container <appContainerName>
