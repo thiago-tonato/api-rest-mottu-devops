@@ -18,10 +18,11 @@ stages:
         steps:
           - checkout: self
 
-          - task: UseJavaVersion@1
+          - task: JavaToolInstaller@0
             inputs:
               versionSpec: '17'
-              architecture: 'x64'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
 
           - task: Maven@3
             displayName: 'Compilar e Testar'
