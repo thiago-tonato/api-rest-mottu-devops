@@ -132,7 +132,7 @@ stages:
                       Write-Host 'Removendo container group existente (se houver)...'
                       $exists = az container show --resource-group $resourceGroup --name $containerGroup >$null 2>&1
                       if ($LASTEXITCODE -eq 0) {
-                        az container delete --resource-group $resourceGroup --name $containerGroup --yes --no-wait
+                        az container delete --resource-group $resourceGroup --name $containerGroup --yes
                         Write-Host 'Aguardando remoção...'
                         do {
                           Start-Sleep -Seconds 5
