@@ -44,7 +44,7 @@ MYSQL_APP_USER="qualitracker_user"
 MYSQL_APP_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
 
-APP_CONNECTION_STRING="jdbc:mysql://127.0.0.1:3306/${MYSQL_DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+APP_CONNECTION_STRING="jdbc:mysql://${MYSQL_CONTAINER_NAME}:3306/${MYSQL_DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 
 # Função auxiliar
 print_step() {
@@ -153,7 +153,7 @@ cat >"$ACI_TEMPLATE" <<EOF
           ],
           "environmentVariables": [
             { "name": "SERVER_PORT", "value": "8080" },
-            { "name": "DB_HOST", "value": "127.0.0.1" },
+            { "name": "DB_HOST", "value": "${MYSQL_CONTAINER_NAME}" },
             { "name": "DB_PORT", "value": "3306" },
             { "name": "SPRING_DATASOURCE_URL", "value": "${APP_CONNECTION_STRING}" },
             { "name": "SPRING_DATASOURCE_USERNAME", "value": "${MYSQL_APP_USER}" },
@@ -239,16 +239,19 @@ echo "  • Imagem da aplicação: ${APP_IMAGE_FULL}"
 echo "  • Imagem do MySQL: ${DB_IMAGE_FULL}"
 echo "  • Container Group: ${CONTAINER_GROUP_NAME}"
 echo "  • URL da aplicação: ${APP_URL}"
+
 echo ""
 print_step "Credenciais geradas:"
 echo "  • Usuário banco: ${MYSQL_APP_USER}"
 echo "  • Senha banco: ${MYSQL_APP_PASSWORD}"
 echo "  • Senha root MySQL: ${MYSQL_ROOT_PASSWORD}"
+
 echo ""
 print_step "Comandos úteis:"
 echo "  az acr login --name ${ACR_NAME}"
 echo "  az container logs --resource-group ${RESOURCE_GROUP} --name ${CONTAINER_GROUP_NAME} --container ${APP_CONTAINER_NAME}"
 echo "  az container exec --resource-group ${RESOURCE_GROUP} --name ${CONTAINER_GROUP_NAME} --container ${MYSQL_CONTAINER_NAME} --exec-command \"mysql -u${MYSQL_APP_USER} -p${MYSQL_APP_PASSWORD} ${MYSQL_DB_NAME}\""
+
 echo ""
 echo -e "${RED}⚠️ Salve as senhas em local seguro. Elas não serão exibidas novamente.${NC}"
 
