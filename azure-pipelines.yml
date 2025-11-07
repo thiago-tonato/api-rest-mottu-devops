@@ -17,28 +17,56 @@ stages:
       - job: Build
         steps:
           - checkout: self
-          
+
           - task: JavaToolInstaller@0
             inputs:
               versionSpec: '17'
               jdkArchitecture: 'x64'
-          
+
           - task: Maven@3
             displayName: 'Compilar e Testar'
             inputs:
               mavenPomFile: 'pom.xml'
-              goals: 'clean test package'
+              goals: 'clean test'
               publishJUnitResults: true
               testResultsFiles: '**/surefire-reports/TEST-*.xml'
-          
-          - task: PublishBuildArtifacts@1
+
+  - stage: ContainerImage
+    displayName: 'Build da Imagem no ACR'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: BuildContainerImage
+        steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Buildar imagem no ACR'
             inputs:
-              pathToPublish: '$(System.DefaultWorkingDirectory)/target/*.jar'
-              artifactName: 'app'
+              azureSubscription: '$(azureSubscription)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                APP_IMAGE_BASE="$(appImageName)"
+                if [[ "$APP_IMAGE_BASE" == *:* ]]; then
+                  APP_IMAGE_REPO="${APP_IMAGE_BASE%%:*}"
+                else
+                  APP_IMAGE_REPO="$APP_IMAGE_BASE"
+                fi
+
+                IMAGE_TAG="$(Build.BuildId)"
+
+                echo "Buildando imagem ${APP_IMAGE_REPO}:${IMAGE_TAG} no ACR $(acrName)..."
+                az acr build \
+                  --registry "$(acrName)" \
+                  --image "${APP_IMAGE_REPO}:${IMAGE_TAG}" \
+                  .
 
   - stage: Deploy
     displayName: 'Deploy'
-    dependsOn: Build
+    dependsOn: ContainerImage
     condition: succeeded()
     jobs:
       - deployment: Deploy
@@ -47,12 +75,51 @@ stages:
           runOnce:
             deploy:
               steps:
-                - download: current
-                  artifact: app
-                
-                - task: AzureWebApp@1
+                - checkout: self
+
+                - task: AzureCLI@2
+                  displayName: 'Atualizar container no Azure Container Instances'
                   inputs:
                     azureSubscription: '$(azureSubscription)'
-                    appName: '$(webAppName)'
-                    package: '$(Pipeline.Workspace)/app/*.jar'
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+
+                      if [[ -z "$(containerGroupName)" ]]; then
+                        echo "Variável containerGroupName não definida." >&2
+                        exit 1
+                      fi
+
+                      APP_IMAGE_BASE="$(appImageName)"
+                      if [[ "$APP_IMAGE_BASE" == *:* ]]; then
+                        APP_IMAGE_REPO="${APP_IMAGE_BASE%%:*}"
+                      else
+                        APP_IMAGE_REPO="$APP_IMAGE_BASE"
+                      fi
+
+                      IMAGE_TAG="$(Build.BuildId)"
+                      LOGIN_SERVER=$(az acr show --name "$(acrName)" --query loginServer -o tsv)
+                      FULL_IMAGE="${LOGIN_SERVER}/${APP_IMAGE_REPO}:${IMAGE_TAG}"
+
+                      RESOURCE_GROUP=$(az resource list \
+                        --name "$(containerGroupName)" \
+                        --resource-type Microsoft.ContainerInstance/containerGroups \
+                        --query "[0].resourceGroup" -o tsv)
+
+                      if [[ -z "$RESOURCE_GROUP" ]]; then
+                        echo "Não foi possível localizar o resource group do container group $(containerGroupName)." >&2
+                        exit 1
+                      fi
+
+                      echo "Atualizando container group $(containerGroupName) com a imagem ${FULL_IMAGE}..."
+                      az container update \
+                        --resource-group "$RESOURCE_GROUP" \
+                        --name "$(containerGroupName)" \
+                        --set containers[0].image="$FULL_IMAGE"
+
+                      echo "Reiniciando container group para aplicar a nova imagem..."
+                      az container restart \
+                        --resource-group "$RESOURCE_GROUP" \
+                        --name "$(containerGroupName)"
 
